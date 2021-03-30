@@ -1,0 +1,5 @@
+- pickle to json
+- completed list
+- on hold list
+- dropped list
+- days watched calculator

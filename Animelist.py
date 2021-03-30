@@ -11,7 +11,7 @@ import random
 import urllib
 from http.cookiejar import CookieJar
 
-directory = "C:/Users/Kniplip/Documents/Animelist/"
+directory = os.path.dirname(os.path.realpath(__file__)) + '\\'
 file_name = "Seasonal.pkl"
 animelist = lists = listofanimes = []
 deleted = False
@@ -442,7 +442,7 @@ def randomanime():
 
 def begin2():
     global animelist, file_name, lists, listofanimes
-    open_file = open(directory + 'Lists/' + file_name, "rb")
+    open_file = open(directory + 'Lists\\' + file_name, "rb")
     animelist = pickle.load(open_file)
     open_file.close()
 
