@@ -6,3 +6,4 @@ Todolist:
 - on hold list
 - dropped list
 - days watched calculator
+- making code more readable and clean
