@@ -111,6 +111,7 @@ def namelistmaker(namelist):
             namelist2.append(newthing.lower())
     return namelist2
 
+# Checks if a given link exists
 def Linkchecker(Cleanlink, name, header=header):
     attempt = Cleanlink + name
     r = req.get(attempt, timeout=20, headers=header)
