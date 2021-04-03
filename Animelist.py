@@ -15,31 +15,9 @@ directory = os.path.dirname(os.path.realpath(__file__)) + '\\'
 file_name = "Seasonal.pkl"
 animelist = lists = listofanimes = []
 deleted = False
-useragents = [
-"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36 Edg/89.0.774.57",
-"Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko",
-"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36",
-"Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36",
-"Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36",
-"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:87.0) Gecko/20100101 Firefox/87.0",
-"Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36 Vivaldi/3.7",
-"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36 Vivaldi/3.7"]
 header = {
-    'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
-    'accept-encoding': 'gzip, deflate, br',
-    'accept-language': 'en-GB,en;q=0.9,nl;q=0.8,ja;q=0.7',
-    'connection': 'keep-alive',
-    'cache-control': 'max-age=0',
-    'dnt': '1',
-    'sec-fetch-dest': 'document',
-    'sec-ch-ua-mobile': '?0',
-    'sec-fetch-mode': 'navigate',
-    'sec-fetch-site': 'none',
-    'sec-fetch-user': '?1',
-    'sec-ch-ua': '"Google Chrome";v="89", "Chromium";v="89", ";Not A Brand";v="99"',
     'host': 'crunchyroll.com',
     'referer': 'https://www.google.com/',
-    'upgrade-insecure-requests': '1',
     'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/34.0.1847.131 Safari/537.36'
 }
 
@@ -47,11 +25,9 @@ header = {
 def lengthmaker(checklist, length):
     checklist2 = []
     for i in checklist:
-        newword = ''
-        if not len(i) < length:
-            for j in range(0, length):
-                newword += i[j]
-            checklist2.append(newword)
+        newword = i.ljust(length, ' ')
+        newword = newword[0:length]
+        checklist2.append(newword)
     return checklist2
 
 # Returns a list for the similarity check with anime names.
@@ -118,34 +94,19 @@ def Linkchecker(Cleanlink, name, header=header):
     if r.status_code == 200:
         return r.url
 
+# Returns the first link that exists or returns the text 'Not Found...'. In that case i will try to find an accessible
+# website where you can watch it.
 def wheretowatch(namelist, year):
     namelist = namelistmaker(namelist)
+    links = ["http://www2.kickassanime.rs/anime/", "https://gogoanime.ai/category/", "https://kissanime.ru.com/series/", "https://www1.animeshow.tv/", "https://www.animefreak.tv/watch/"]
+    forbidden = [None, "https://www2.kickassanime.rs/", "https://www2.kickassanime.rs/anime/", "https://www1.animeshow.tv"]
+
+    # Checks every name in namelist with every website in links if it exists
     for i in namelist:
-
-        # Kickassanime Checker
-        yikers = Linkchecker("http://www2.kickassanime.rs/anime/", i, None)
-        if yikers != "https://www2.kickassanime.rs/" and yikers != "https://www2.kickassanime.rs/anime/" and yikers != None:
-            return yikers
-        
-        # Gogoanime Checker
-        yikers = Linkchecker("https://gogoanime.ai/category/", i, None)
-        if yikers != None:
-            return yikers
-        
-        # Kissanime Checker
-        yikers = Linkchecker("https://kissanime.ru.com/series/", i, None)
-        if yikers != None:
-            return yikers
-
-        # Animeshow Checker
-        yikers = Linkchecker("https://www1.animeshow.tv/", i, None)
-        if yikers != None and yikers != 'https://www1.animeshow.tv':
-            return yikers
-
-        # Animefreak Checker
-        yikers = Linkchecker("https://www.animefreak.tv/watch/", i, None)
-        if yikers != None:
-            return yikers
+        for j in links:
+            yikers = Linkchecker(j, i, None)
+            if yikers not in forbidden:
+                return yikers
 
         # # Masterani Checker
         # try:
@@ -155,21 +116,6 @@ def wheretowatch(namelist, year):
         #         return yikers
         # except:
         #     pass
-
-        # # Crunchyroll Checker
-        # Cleanlink = 'https://www.crunchyroll.com/en-gb/'
-        # attempt = Cleanlink + i
-        # print(attempt)
-        # try:
-        #     req = urllib.request.Request(attempt, headers=header)
-        #     cj = CookieJar()
-        #     opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cj), urllib.request.HTTPRedirectHandler)
-        #     response = opener.open(req)
-        #     response.close()
-        #     print(response)
-        # except urllib.request.HTTPError as inst:
-        #     output = format(inst)
-        #     print(output)
 
         # # Animetake Checker
         # yikers = Linkchecker("https://animetake.tv/anime/", i, {'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36'})
@@ -498,7 +444,7 @@ def begin():
         search()
     begin()
 
-begin2()
+# begin2()
 
 # open_file = open(directory + 'Tests/' + 'Listofanimes.pkl', "rb")
 # listofanimes = pickle.load(open_file)
