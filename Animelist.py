@@ -68,23 +68,18 @@ def page_soupgetter(URL):
         page_soup = soup()
     return page_soup
 
-def namelistmaker(namelist):
+# Returns the given namelist, but it's now URL ready
+def namelistmaker(namelist, characterlist = []):
     namelist2 = []
-    for a in namelist:
-        a = a.replace('(TV)', '')
-        newthing = (a.replace(':', '').replace('.', '').replace('/', '').replace(' ', '-').replace('%', '').replace('(', '').replace(')', '').replace('!', '').replace('?', '').replace('<', '').replace('>', '').replace("'", "").replace("~", '').replace('☆', '').replace('&', '').replace('#', '').replace('"', '').replace(';', ''))
-        liss = list(newthing)
-        newthing = ''
-        for c in range(0, len(liss)):
-            try:
-                if liss[c] == '-' and liss[c+1] == '-':
-                    liss.pop(c)
-            except:
-                pass
-        for character in liss:
-            newthing += character
-        if newthing.lower() not in namelist2:
-            namelist2.append(newthing.lower())
+    characterlist2 = [':', '.', '/', '%', '(', ')', '!', '?', '<', '>', "'", '~', '☆', '&', '#', '"', ';']
+    characterlist = characterlist + characterlist2
+    for name in namelist:
+        name = name.lower()
+        for i in characterlist:
+            name = name.replace(i, '')
+        name = name.strip().replace(' ', '-').replace('--', '-')
+        if not name in namelist2:
+            namelist2.append(name)
     return namelist2
 
 # Checks if a given link exists
@@ -101,7 +96,6 @@ def wheretowatch(namelist, year):
     links = ["http://www2.kickassanime.rs/anime/", "https://gogoanime.ai/category/", "https://kissanime.ru.com/series/", "https://www1.animeshow.tv/", "https://www.animefreak.tv/watch/"]
     forbidden = [None, "https://www2.kickassanime.rs/", "https://www2.kickassanime.rs/anime/", "https://www1.animeshow.tv"]
 
-    # Checks every name in namelist with every website in links if it exists
     for i in namelist:
         for j in links:
             yikers = Linkchecker(j, i, None)
