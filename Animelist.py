@@ -77,7 +77,7 @@ def namelistmaker(namelist, characterlist = []):
         name = name.lower()
         for i in characterlist:
             name = name.replace(i, '')
-        name = name.strip().replace(' ', '-').replace('--', '-')
+        name = name.strip().replace(' ', '-').replace('---', '-').replace('--', '-')
         if not name in namelist2:
             namelist2.append(name)
     return namelist2
@@ -91,25 +91,17 @@ def Linkchecker(Cleanlink, name, header=header):
 
 # Returns the first link that exists or returns the text 'Not Found...'. In that case i will try to find an accessible
 # website where you can watch it.
-def wheretowatch(namelist, year):
-    namelist = namelistmaker(namelist)
-    links = ["http://www2.kickassanime.rs/anime/", "https://gogoanime.ai/category/", "https://kissanime.ru.com/series/", "https://www1.animeshow.tv/", "https://www.animefreak.tv/watch/"]
+def wheretowatch(namelist, year = None):
+    links = ["https://gogoanime.ai/category/", "http://www2.kickassanime.rs/anime/", "https://kissanime.ru.com/series/", "https://www1.animeshow.tv/", "https://www.animefreak.tv/watch/"]
     forbidden = [None, "https://www2.kickassanime.rs/", "https://www2.kickassanime.rs/anime/", "https://www1.animeshow.tv"]
+    no = [[], ["(tv)"], ["(tv)"], [], []]
 
-    for i in namelist:
-        for j in links:
-            yikers = Linkchecker(j, i, None)
+    for j in range(0, len(links)):
+        namelist = namelistmaker(namelist, no[j])
+        for i in namelist:
+            yikers = Linkchecker(links[j], i, None)
             if yikers not in forbidden:
                 return yikers
-
-        # # Masterani Checker
-        # try:
-        #     year2 = int(year[-4] + year[-3] + year[-2] + year[-1])
-        #     yikers = Linkchecker('https://www.masterani.one/watch/', i)
-        #     if yikers != None:
-        #         return yikers
-        # except:
-        #     pass
 
         # # Animetake Checker
         # yikers = Linkchecker("https://animetake.tv/anime/", i, {'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36'})
@@ -440,9 +432,26 @@ def begin():
 
 # begin2()
 
-# open_file = open(directory + 'Tests/' + 'Listofanimes.pkl', "rb")
-# listofanimes = pickle.load(open_file)
-# open_file.close()
+b = 'qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM1234567890!:() -'
+a = []
+
+for yikers in b:
+    a.append(yikers)
+
+open_file = open(directory + 'Tests/' + 'Listofanimes.pkl', "rb")
+listofanimes = pickle.load(open_file)
+open_file.close()
+
+listofanimewithrandomcharacters = []
+
+for i in listofanimes:
+    for j in i["Anime"]:
+        if j not in a:
+            listofanimewithrandomcharacters.append(i["Anime"])
+
+for i in listofanimewithrandomcharacters:
+    print(i)
+
 
 # for i in range(0, len(listofanimes)):
 #     if listofanimes[i]["Anime ID"] == '28121':
