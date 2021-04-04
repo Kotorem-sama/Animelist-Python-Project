@@ -42,7 +42,7 @@ def ActualDurationCalc(ActualDuration):
                 ActualDuration4 = int(ActualDuration[k-2])
     return ActualDuration2 + ActualDuration3 + ActualDuration4
 
-for i in range(48478, 49000):
+for i in range(48613, 49000):
     print(str(i))
     if i % 100 == 0:
         open_file = open(directory + 'Tests/' + file_name, "wb")

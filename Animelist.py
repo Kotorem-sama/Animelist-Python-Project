@@ -69,15 +69,21 @@ def page_soupgetter(URL):
     return page_soup
 
 # Returns the given namelist, but it's now URL ready
-def namelistmaker(namelist, characterlist = []):
+def namelistmaker(namelist, changelist):
     namelist2 = []
-    characterlist2 = [':', '.', '/', '%', '(', ')', '!', '?', '<', '>', "'", '~', '☆', '&', '#', '"', ';']
-    characterlist = characterlist + characterlist2
     for name in namelist:
         name = name.lower()
-        for i in characterlist:
-            name = name.replace(i, '')
-        name = name.strip().replace(' ', '-').replace('---', '-').replace('--', '-')
+        for i in range(0, len(changelist)):
+            if i % 2:
+                pass
+            else:
+                name = name.replace(changelist[i], changelist[i+1])
+        name = name.strip().replace(' ', '-')
+        if name[-1] == '-' and name[-2] != '-':
+            name = name[0:-2]
+        if name[0] == '-':
+            name = name[1:-1]
+        name = name.replace('---', '-').replace('--', '-')
         if not name in namelist2:
             namelist2.append(name)
     return namelist2
@@ -91,10 +97,18 @@ def Linkchecker(Cleanlink, name, header=header):
 
 # Returns the first link that exists or returns the text 'Not Found...'. In that case i will try to find an accessible
 # website where you can watch it.
-def wheretowatch(namelist, year = None):
+def wheretowatch(namelist, year = None, Producers = []):
     links = ["https://gogoanime.ai/category/", "http://www2.kickassanime.rs/anime/", "https://kissanime.ru.com/series/", "https://www1.animeshow.tv/", "https://www.animefreak.tv/watch/"]
     forbidden = [None, "https://www2.kickassanime.rs/", "https://www2.kickassanime.rs/anime/", "https://www1.animeshow.tv"]
-    no = [[], ["(tv)"], ["(tv)"], [], []]
+    aa = ["ä", "a", "é", "e", "à", "a", "ö", "o", "â", "a", "ü", "u", "◯", "o", "ē", "e", "○", "o", "ù", "u", "x", "x", "ð", "d", "ū", "u", "á", "a", "Ω", "w", "ì", "i", "ž", "z", "ò", "o", "ó", "o", "ǔ", "u", "ô", "o", "½", "12", "+", "", "&", "", "⅙", "16", "Δ", "d", "³", "3", "Ψ", "ps", "∞", "", "√", "d", "★", "", ".", "-", ":", "-", "/", "", ";", "", "♥", "-", "@", "", "☆", "-", "*", "-", "∽", "-", "=", "-", "_", "-", "†", "-", "―", "-", "～", "-", "!", "", "(", "", ")", "", "?", "", "'", "", ",", "", "%", "", "♡", "", "²", "", '"', "", "#", "", "$", "", "♪", "", "^", "", "♭", "", "[", "", "]", "", ">", "", "␣", "", "…", "", "→", "", "←", "", "◎", "", "μ", "", "°", "", "＊", "", "“", "", "♂", "", "△", "", "￥", "", "＿", "", "’", "", "・", "", "『", "", "』", "", "＋", "", "♀", "", "！", ""]
+    bb = ["(tv)", "", "ä", "a", "é", "e", "à", "a", "ö", "o", "â", "a", "ü", "u", "◯", "o", "ē", "e", "○", "o", "ù", "u", "x", "x", "ð", "d", "ū", "u", "á", "a", "Ω", "w", "ì", "i", "ž", "z", "ò", "o", "ó", "o", "ǔ", "u", "ô", "o", "½", "12", "+", "", "&", "", "⅙", "16", "Δ", "d", "³", "3", "Ψ", "", "∞", "", "√", "d", "★", "", ".", "", ":", "-", "/", "", ";", "", "♥", "", "@", "-", "☆", "-", "*", "-", "∽", "-", "=", "-", "_", "-", "†", "-", "―", "-", "～", "-", "!", "", "(", "", ")", "", "?", "", "'", "", ",", "", "%", "", "♡", "", "²", "", '"', "", "#", "", "$", "", "♪", "", "^", "", "♭", "", "[", "", "]", "", ">", "", "␣", "", "…", "", "→", "", "←", "", "◎", "", "μ", "", "°", "", "＊", "", "“", "", "♂", "", "△", "", "￥", "", "＿", "", "’", "", "・", "", "『", "", "』", "", "＋", "", "♀", "", "！", ""]
+    cc = ["(tv)", "", "ä", "a", "é", "e", "à", "a", "ö", "o", "â", "a", "ü", "u", "◯", "o", "ē", "e", "○", "o", "ù", "u", "x", "x", "ð", "d", "ū", "u", "á", "a", "Ω", "w", "ì", "i", "ž", "z", "ò", "o", "ó", "o", "ǔ", "u", "ô", "o", "+", "", "&", "", "⅙", "16", "Δ", "", "³", "", "Ψ", "", "√", "", "★", "", ".", "-", ":", "", "/", "-", ";", "", "♥", "", "@", "", "☆", "-", "*", "-", "∽", "-", "=", "-", "_", "-", "†", "-", "―", "-", "～", "-", "!", "", "(", "", ")", "", "?", "", "'", "", ",", "", "%", "", "♡", "", "²", "", '"', "", "#", "", "$", "", "♪", "", "^", "", "♭", "", "[", "", "]", "", ">", "", "␣", "", "…", "", "→", "", "←", "", "◎", "", "μ", "", "°", "", "＊", "", "“", "", "♂", "", "△", "", "￥", "", "＿", "", "’", "", "・", "", "『", "", "』", "", "＋", "", "♀", "", "！", ""]
+    dd = ["ä", "a", "é", "e", "à", "a", "ö", "o", "â", "a", "ü", "u", "◯", "o", "ē", "e", "○", "o", "ù", "u", "x", "x", "ð", "d", "ū", "u", "á", "a", "Ω", "w", "ì", "i", "ž", "z", "ò", "o", "ó", "o", "ǔ", "u", "ô", "o", "½", "", "+", "plus", "&", "and", "⅙", "16", "Δ", "", "³", "", "Ψ", "", "∞", "", "√", "", "★", "-", ".", "-", ":", "-", "/", "-", ";", "-", "♥", "", "@", "", "☆", "-", "*", "-", "∽", "-", "=", "-", "_", "-", "†", "-", "―", "-", "～", "-", "!", "", "(", "", ")", "", "?", "", "'", "", ",", "", "%", "", "♡", "", "²", "", '"', "", "#", "", "$", "", "♪", "", "^", "", "♭", "", "[", "", "]", "", ">", "", "␣", "", "…", "", "→", "", "←", "", "◎", "", "μ", "", "°", "", "＊", "", "“", "", "♂", "", "△", "", "￥", "", "＿", "", "’", "", "・", "", "『", "", "』", "", "＋", "", "♀", "", "！", ""]
+    ee = ["ä", "a", "é", "", "à", "a", "ö", "o", "â", "a", "ü", "u", "◯", "o", "ē", "e", "○", "o", "ù", "u", "x", "x", "ð", "d", "ū", "u", "á", "a", "Ω", "w", "ì", "i", "ž", "z", "ò", "o", "ó", "o", "ǔ", "u", "ô", "o", "½", "", "+", "", "&", "", "⅙", "16", "Δ", "", "³", "", "Ψ", "", "∞", "", "√", "", "★", "", ".", "", ":", "", "/", "", ";", "", "♥", "", "@", "", "☆", "-", "*", "-", "∽", "-", "=", "-", "_", "-", "†", "-", "―", "-", "～", "-", "!", "", "(", "", ")", "", "?", "", "'", "", ",", "", "%", "", "♡", "", "²", "", '"', "", "#", "", "$", "", "♪", "", "^", "", "♭", "", "[", "", "]", "", ">", "", "␣", "", "…", "", "→", "", "←", "", "◎", "", "μ", "", "°", "", "＊", "", "“", "", "♂", "", "△", "", "￥", "", "＿", "", "’", "", "・", "", "『", "", "』", "", "＋", "", "♀", "", "！", ""]
+    no = [aa, bb, cc, dd, ee]
+
+    if "Anime Beans" in Producers:
+        return "https://apps.qoo-app.com/en/app/7228"
 
     for j in range(0, len(links)):
         namelist = namelistmaker(namelist, no[j])
@@ -115,15 +129,14 @@ def wheretowatch(namelist, year = None):
 
     return 'Not Found...'
 
-def search():
-    global listofanimes
+def whichanime():
     a = input("Which anime do you wish to know more about?: ")
     outcome = maximumsimilarity(a)
     if len(outcome) == 1:
         b = int(outcome[0])
     elif len(outcome) == 0:
         print("That's not funny. Get lost")
-        return
+        return None
     else:
         for i in range(0, len(outcome)):
             print(f"{i + 1}. {listofanimes[outcome[i]]['Anime']} (English: {listofanimes[outcome[i]]['English']}) (Type: {listofanimes[outcome[i]]['Type']})")
@@ -133,7 +146,11 @@ def search():
             b = int(outcome[d - 1])
         except:
             print('Process Cancelled')
-            return
+            return None
+    return b
+
+def search():
+    b = whichanime()
     print(f"Title:          {listofanimes[b]['Anime']}")
     if listofanimes[b]['English'] != '':
         print(f"English Title:  {listofanimes[b]['English']}")
@@ -432,30 +449,51 @@ def begin():
 
 # begin2()
 
-b = 'qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM1234567890!:() -'
-a = []
+# open_file = open(directory + 'Tests/' + 'Listofanimes.pkl', "rb")
+# listofanimes = pickle.load(open_file)
+# open_file.close()
 
-for yikers in b:
-    a.append(yikers)
+# b = "！"
+# a = []
 
-open_file = open(directory + 'Tests/' + 'Listofanimes.pkl', "rb")
-listofanimes = pickle.load(open_file)
-open_file.close()
+# for yikers in b:
+#     a.append(yikers)
 
-listofanimewithrandomcharacters = []
+# listofanimewithrandomcharacters = []
+# listending = []
 
-for i in listofanimes:
-    for j in i["Anime"]:
-        if j not in a:
-            listofanimewithrandomcharacters.append(i["Anime"])
+# # hebben char in naam
+# for i in listofanimes:
+#     for j in i["Anime"]:
+#         if j in a:
+#             listofanimewithrandomcharacters.append(i["Anime"])
 
-for i in listofanimewithrandomcharacters:
-    print(i)
+# # Eindigd op char
+# for i in listofanimes:
+#     if i["Anime"][-1] in a:
+#         listending.append(i["Anime"])
 
+# print('ending:')
+# for i in listending:
+#     print(i)
 
+# print('\nwith:')
+# for i in listofanimewithrandomcharacters:
+#     print(i)
+
+# # Search for data
+# for i in listofanimes:
+#     if i["Anime"] == "マンキーのアニメレビュー":
+#         print(i)
+
+# # Change Data
 # for i in range(0, len(listofanimes)):
-#     if listofanimes[i]["Anime ID"] == '28121':
-#         print(listofanimes[i]["Synonyms"][1])
+#     if listofanimes[i]["Anime"] == 'Young Alive! ~iPS細胞がひらく未来~':
+#         a = listofanimes.pop(i)
+#         a["Anime"] = "Young Alive!: iPS Saibou Ga Hiraku Mirai"
+#         listofanimes.insert(i, a)
+#         print(listofanimes[i-1]["Anime ID"], listofanimes[i]["Anime ID"], listofanimes[i+1]["Anime ID"])
+
 
 # for i in range(1, len(listofanimes)):
 #     if int(listofanimes[i]["Anime ID"]) < int(listofanimes[i-1]["Anime ID"]):
@@ -468,6 +506,7 @@ for i in listofanimewithrandomcharacters:
 # pickle.dump(listofanimes, open_file)
 # open_file.close()
 
+# # Searches for the biggest Anime ID gap
 # index1 = 0
 # index2 = 1
 # maximum = maximumindex1 = maximumindex2 = 0
