@@ -31,14 +31,16 @@ def lengthmaker(checklist, length):
     return checklist2
 
 # Returns a list for the similarity check with anime names.
-def checklistmaker(i, length):
+def checklistmaker(i):
     checklist = [listofanimes[i]["Anime"]]
     if listofanimes[i]["English"] != '':
         checklist.append(listofanimes[i]["English"])
-    if listofanimes[i]["Synonyms"] != []:
-        for k in listofanimes[i]["Synonyms"]:
-            checklist.append(k)
-    return lengthmaker(checklist, length)
+    try:
+        for yikerss in listofanimes[i]["Synonyms"]:
+            checklist.append(yikerss)
+    except:
+        pass
+    return checklist
 
 # Returns the anime that resembles the input the most.
 def maximumsimilarity(a):
@@ -46,7 +48,7 @@ def maximumsimilarity(a):
     maximumanimelist = []
     a = a.lower()
     for i in range(0, len(listofanimes)):
-        checklist = checklistmaker(i, len(a))
+        checklist = lengthmaker(checklistmaker(i), len(a))
         for j in checklist:
             b = j.lower()
             sim = similarity(b, a)
@@ -80,9 +82,9 @@ def namelistmaker(namelist, changelist):
                 name = name.replace(changelist[i], changelist[i+1])
         name = name.strip().replace(' ', '-')
         if name[-1] == '-' and name[-2] != '-':
-            name = name[0:-2]
+            name = name[0:-1]
         if name[0] == '-':
-            name = name[1:-1]
+            name = name[1:-1] + name[-1]
         name = name.replace('---', '-').replace('--', '-')
         if not name in namelist2:
             namelist2.append(name)
@@ -91,6 +93,7 @@ def namelistmaker(namelist, changelist):
 # Checks if a given link exists
 def Linkchecker(Cleanlink, name, header=header):
     attempt = Cleanlink + name
+    print(attempt)
     r = req.get(attempt, timeout=20, headers=header)
     if r.status_code == 200:
         return r.url
@@ -98,10 +101,10 @@ def Linkchecker(Cleanlink, name, header=header):
 # Returns the first link that exists or returns the text 'Not Found...'. In that case i will try to find an accessible
 # website where you can watch it.
 def wheretowatch(namelist, year = None, Producers = []):
-    links = ["https://gogoanime.ai/category/", "http://www2.kickassanime.rs/anime/", "https://kissanime.ru.com/series/", "https://www1.animeshow.tv/", "https://www.animefreak.tv/watch/"]
+    links = ["https://gogoanime.ai/category/", "https://www2.kickassanime.rs/anime/", "https://kissanime.ru.com/series/", "https://www1.animeshow.tv/", "https://www.animefreak.tv/watch/"]
     forbidden = [None, "https://www2.kickassanime.rs/", "https://www2.kickassanime.rs/anime/", "https://www1.animeshow.tv"]
-    aa = ["ä", "a", "é", "e", "à", "a", "ö", "o", "â", "a", "ü", "u", "◯", "o", "ē", "e", "○", "o", "ù", "u", "x", "x", "ð", "d", "ū", "u", "á", "a", "Ω", "w", "ì", "i", "ž", "z", "ò", "o", "ó", "o", "ǔ", "u", "ô", "o", "½", "12", "+", "", "&", "", "⅙", "16", "Δ", "d", "³", "3", "Ψ", "ps", "∞", "", "√", "d", "★", "", ".", "-", ":", "-", "/", "", ";", "", "♥", "-", "@", "", "☆", "-", "*", "-", "∽", "-", "=", "-", "_", "-", "†", "-", "―", "-", "～", "-", "!", "", "(", "", ")", "", "?", "", "'", "", ",", "", "%", "", "♡", "", "²", "", '"', "", "#", "", "$", "", "♪", "", "^", "", "♭", "", "[", "", "]", "", ">", "", "␣", "", "…", "", "→", "", "←", "", "◎", "", "μ", "", "°", "", "＊", "", "“", "", "♂", "", "△", "", "￥", "", "＿", "", "’", "", "・", "", "『", "", "』", "", "＋", "", "♀", "", "！", ""]
-    bb = ["(tv)", "", "ä", "a", "é", "e", "à", "a", "ö", "o", "â", "a", "ü", "u", "◯", "o", "ē", "e", "○", "o", "ù", "u", "x", "x", "ð", "d", "ū", "u", "á", "a", "Ω", "w", "ì", "i", "ž", "z", "ò", "o", "ó", "o", "ǔ", "u", "ô", "o", "½", "12", "+", "", "&", "", "⅙", "16", "Δ", "d", "³", "3", "Ψ", "", "∞", "", "√", "d", "★", "", ".", "", ":", "-", "/", "", ";", "", "♥", "", "@", "-", "☆", "-", "*", "-", "∽", "-", "=", "-", "_", "-", "†", "-", "―", "-", "～", "-", "!", "", "(", "", ")", "", "?", "", "'", "", ",", "", "%", "", "♡", "", "²", "", '"', "", "#", "", "$", "", "♪", "", "^", "", "♭", "", "[", "", "]", "", ">", "", "␣", "", "…", "", "→", "", "←", "", "◎", "", "μ", "", "°", "", "＊", "", "“", "", "♂", "", "△", "", "￥", "", "＿", "", "’", "", "・", "", "『", "", "』", "", "＋", "", "♀", "", "！", ""]
+    aa = ["ä", "a", "é", "e", "à", "a", "ö", "o", "â", "a", "ü", "u", "◯", "o", "ē", "e", "○", "o", "ù", "u", "x", "x", "ð", "d", "ū", "u", "á", "a", "Ω", "w", "ì", "i", "ž", "z", "ò", "o", "ó", "o", "ǔ", "u", "ô", "o", "½", "12", "+", "", "&", "", "⅙", "16", "Δ", "d", "³", "3", "Ψ", "ps", "∞", "", "√", "d", "★", "", ".", "-", ":", "", "/", "", ";", "", "♥", "-", "@", "", "☆", "-", "*", "-", "∽", "-", "=", "-", "_", "-", "†", "-", "―", "-", "～", "-", "!", "", "(", "", ")", "", "?", "", "'", "", ",", "", "%", "", "♡", "", "²", "", '"', "", "#", "", "$", "", "♪", "", "^", "", "♭", "", "[", "", "]", "", ">", "", "␣", "", "…", "", "→", "", "←", "", "◎", "", "μ", "", "°", "", "＊", "", "“", "", "♂", "", "△", "", "￥", "", "＿", "", "’", "", "・", "", "『", "", "』", "", "＋", "", "♀", "", "！", ""]
+    bb = ["(tv)", "", "ä", "a", "é", "e", "à", "a", "ö", "o", "â", "a", "ü", "u", "◯", "o", "ē", "e", "○", "o", "ù", "u", "x", "x", "ð", "d", "ū", "u", "á", "a", "Ω", "w", "ì", "i", "ž", "z", "ò", "o", "ó", "o", "ǔ", "u", "ô", "o", "½", "12", "+", "", "&", "", "⅙", "16", "Δ", "d", "³", "3", "Ψ", "", "∞", "", "√", "d", "★", "", ".", "", ":", "", "/", "", ";", "", "♥", "", "@", "-", "☆", "-", "*", "-", "∽", "-", "=", "-", "_", "-", "†", "-", "―", "-", "～", "-", "!", "", "(", "", ")", "", "?", "", "'", "", ",", "", "%", "", "♡", "", "²", "", '"', "", "#", "", "$", "", "♪", "", "^", "", "♭", "", "[", "", "]", "", ">", "", "␣", "", "…", "", "→", "", "←", "", "◎", "", "μ", "", "°", "", "＊", "", "“", "", "♂", "", "△", "", "￥", "", "＿", "", "’", "", "・", "", "『", "", "』", "", "＋", "", "♀", "", "！", ""]
     cc = ["(tv)", "", "ä", "a", "é", "e", "à", "a", "ö", "o", "â", "a", "ü", "u", "◯", "o", "ē", "e", "○", "o", "ù", "u", "x", "x", "ð", "d", "ū", "u", "á", "a", "Ω", "w", "ì", "i", "ž", "z", "ò", "o", "ó", "o", "ǔ", "u", "ô", "o", "+", "", "&", "", "⅙", "16", "Δ", "", "³", "", "Ψ", "", "√", "", "★", "", ".", "-", ":", "", "/", "-", ";", "", "♥", "", "@", "", "☆", "-", "*", "-", "∽", "-", "=", "-", "_", "-", "†", "-", "―", "-", "～", "-", "!", "", "(", "", ")", "", "?", "", "'", "", ",", "", "%", "", "♡", "", "²", "", '"', "", "#", "", "$", "", "♪", "", "^", "", "♭", "", "[", "", "]", "", ">", "", "␣", "", "…", "", "→", "", "←", "", "◎", "", "μ", "", "°", "", "＊", "", "“", "", "♂", "", "△", "", "￥", "", "＿", "", "’", "", "・", "", "『", "", "』", "", "＋", "", "♀", "", "！", ""]
     dd = ["ä", "a", "é", "e", "à", "a", "ö", "o", "â", "a", "ü", "u", "◯", "o", "ē", "e", "○", "o", "ù", "u", "x", "x", "ð", "d", "ū", "u", "á", "a", "Ω", "w", "ì", "i", "ž", "z", "ò", "o", "ó", "o", "ǔ", "u", "ô", "o", "½", "", "+", "plus", "&", "and", "⅙", "16", "Δ", "", "³", "", "Ψ", "", "∞", "", "√", "", "★", "-", ".", "-", ":", "-", "/", "-", ";", "-", "♥", "", "@", "", "☆", "-", "*", "-", "∽", "-", "=", "-", "_", "-", "†", "-", "―", "-", "～", "-", "!", "", "(", "", ")", "", "?", "", "'", "", ",", "", "%", "", "♡", "", "²", "", '"', "", "#", "", "$", "", "♪", "", "^", "", "♭", "", "[", "", "]", "", ">", "", "␣", "", "…", "", "→", "", "←", "", "◎", "", "μ", "", "°", "", "＊", "", "“", "", "♂", "", "△", "", "￥", "", "＿", "", "’", "", "・", "", "『", "", "』", "", "＋", "", "♀", "", "！", ""]
     ee = ["ä", "a", "é", "", "à", "a", "ö", "o", "â", "a", "ü", "u", "◯", "o", "ē", "e", "○", "o", "ù", "u", "x", "x", "ð", "d", "ū", "u", "á", "a", "Ω", "w", "ì", "i", "ž", "z", "ò", "o", "ó", "o", "ǔ", "u", "ô", "o", "½", "", "+", "", "&", "", "⅙", "16", "Δ", "", "³", "", "Ψ", "", "∞", "", "√", "", "★", "", ".", "", ":", "", "/", "", ";", "", "♥", "", "@", "", "☆", "-", "*", "-", "∽", "-", "=", "-", "_", "-", "†", "-", "―", "-", "～", "-", "!", "", "(", "", ")", "", "?", "", "'", "", ",", "", "%", "", "♡", "", "²", "", '"', "", "#", "", "$", "", "♪", "", "^", "", "♭", "", "[", "", "]", "", ">", "", "␣", "", "…", "", "→", "", "←", "", "◎", "", "μ", "", "°", "", "＊", "", "“", "", "♂", "", "△", "", "￥", "", "＿", "", "’", "", "・", "", "『", "", "』", "", "＋", "", "♀", "", "！", ""]
@@ -111,8 +114,8 @@ def wheretowatch(namelist, year = None, Producers = []):
         return "https://apps.qoo-app.com/en/app/7228"
 
     for j in range(0, len(links)):
-        namelist = namelistmaker(namelist, no[j])
-        for i in namelist:
+        namelist2 = namelistmaker(namelist, no[j])
+        for i in namelist2:
             yikers = Linkchecker(links[j], i, None)
             if yikers not in forbidden:
                 return yikers
@@ -135,7 +138,7 @@ def whichanime():
     if len(outcome) == 1:
         b = int(outcome[0])
     elif len(outcome) == 0:
-        print("That's not funny. Get lost")
+        print("You really need to learn how to type")
         return None
     else:
         for i in range(0, len(outcome)):
@@ -149,31 +152,11 @@ def whichanime():
             return None
     return b
 
-def search():
-    b = whichanime()
-    print(f"Title:          {listofanimes[b]['Anime']}")
-    if listofanimes[b]['English'] != '':
-        print(f"English Title:  {listofanimes[b]['English']}")
-    try:
-        synonymlist = listofanimes[b]['Synonyms']
-        synonyms = synonymlist.pop(0)
-        try:
-            for j in synonymlist:
-                synonyms += ', ' + j
-        except:
-            pass
-        print(f"Synonyms:       {synonyms}")
-    except:
-        pass
-    URL = 'https://myanimelist.net/anime/' + (listofanimes[b]['Anime ID'])
-    myanimelistpage = page_soupgetter(URL)
-    Change = False
+def changes(b, myanimelistpage):
     if listofanimes[b]['Episodes'] == "Unknown":
         Episodes = myanimelistpage.find('span', text="Episodes:").find_previous('div').text
         Episodes = Episodes.replace('Episodes:', '').strip()
-        Change = True
-    else:
-        Episodes = listofanimes[b]['Episodes']
+        listofanimes[b]['Episodes'] = Episodes
     if listofanimes[b]['Aired'] == "Not available" or listofanimes[b]['Aired'][-1] == "?":
         try:
             Aired = myanimelistpage.find('span', text="Premiered:").find_next('a').text
@@ -181,49 +164,38 @@ def search():
         except:
             Aired = myanimelistpage.find('span', text="Aired:").find_previous('div').text
             Aired = Aired.replace('Aired:', '').strip()
-        Change = True
-    else:
-        Aired = listofanimes[b]['Aired']
+        listofanimes[b]['Aired'] = Aired
     if listofanimes[b]['Duration'] == "Unknown":
         Duration = myanimelistpage.find('span', text="Duration:").find_previous('div').text
         Duration = Duration.replace('Duration:', '').strip()
-        Change = True
-    else:
-        Duration = listofanimes[b]['Duration']
-    Score = myanimelistpage.find('span', text="Score:").find_next('span').text
-    print(f"Score:          {Score}")
-    print(f"Myanimelist:    {URL}")
-    print(f"Type:           {listofanimes[b]['Type']}")
-    print(f"Episodes:       {Episodes}")
-    print(f"Airdate:        {Aired}")
-    try:
-        synonymlist = listofanimes[b]['Genres']
-        synonyms = synonymlist.pop(0)
-        try:
-            for j in synonymlist:
-                synonyms += ', ' + j
-        except:
+        listofanimes[b]['Duration'] = Duration
+
+def search():
+    b = whichanime()
+    print(b)
+    a = listofanimes[b]
+    for yi in a:
+        key = yi
+        value = a[yi]
+        if value == "" or value == []:
             pass
-        print(f"Genres:         {synonyms}")
-    except:
-        pass
-    print(f"Duration:       {listofanimes[b]['Duration']}")
-    print(f"Rating:         {listofanimes[b]['Rating']}")
-    if Change:
-        dictionary = {"Anime" : f"{listofanimes[b]['Anime']}", "English" : f"{listofanimes[b]['English']}", "Synonyms" : listofanimes[b]['Synonyms'], "Anime ID" : f"{b}",
-                     "Type" : f"{listofanimes[b]['Type']}", "Episodes" : f"{Episodes}", "Aired" : Aired, "Genres" : listofanimes[b]['Genres'],
-                     "Duration" : f"{Duration}", "Rating" : listofanimes[b]['Rating'], "ActualDuration" : listofanimes[b]['ActualDuration']}
-        listofanimes.pop(b)
-        listofanimes.append(dictionary)
-    namelist = [listofanimes[b]['Anime']]
-    if listofanimes[b]['English'] != '':
-        namelist.append(listofanimes[b]['English'])
-    try:
-        for i in listofanimes[b]['Synonyms']:
-            namelist.append(i)
-    except:
-        pass
-    print(f"Where to watch: {wheretowatch(namelist, Aired)}")
+        else:
+            if type(value) == list:
+                value2 = value.pop(0)
+                if value != []:
+                    for listitem in value:
+                        value2 += ', ' + listitem
+            elif key == "Anime ID":
+                value2 = 'https://myanimelist.net/anime/' + value
+                myanimelistpage = page_soupgetter(value2)
+                Score = myanimelistpage.find('span', text="Score:").find_next('span').text
+                print("Score:              " + Score)
+            else:
+                value2 = value
+            spaces = (19 - len(key)) * " "
+            print(key + ':' + spaces + value2)
+    changes(b, myanimelistpage)
+    print(f"Where to watch:     {wheretowatch(checklistmaker(b))}")
 
 def similarity(a, b):
     return SequenceMatcher(None, a, b).ratio() * 100
@@ -449,9 +421,17 @@ def begin():
 
 # begin2()
 
-# open_file = open(directory + 'Tests/' + 'Listofanimes.pkl', "rb")
-# listofanimes = pickle.load(open_file)
-# open_file.close()
+open_file = open(directory + 'Tests/' + 'Listofanimes.pkl', "rb")
+listofanimes = pickle.load(open_file)
+open_file.close()
+
+for i in listofanimes:
+    for j in range(0, len(i["Anime"])):
+        try:
+            if i["Anime"][j-1] != " " and i["Anime"][j] == "x" and i["Anime"][j+1] != " ":
+                print(i["Anime"])
+        except:
+            pass
 
 # b = "！"
 # a = []

@@ -3,10 +3,11 @@ from bs4 import BeautifulSoup as soup
 import pickle
 import time
 from playsound import playsound
+import os
 
-directory = "C:/Users/Kniplip/Documents/Animelist/"
+directory = os.path.dirname(os.path.realpath(__file__)) + '\\'
 file_name = "Listofanimes.pkl"
-open_file = open(directory + 'Tests/' + 'Listofanimes.pkl', "rb")
+open_file = open(directory  + 'Listofanimes.pkl', "rb")
 listofanimes = pickle.load(open_file)
 open_file.close()
 
@@ -45,7 +46,7 @@ def ActualDurationCalc(ActualDuration):
 for i in range(48613, 49000):
     print(str(i))
     if i % 100 == 0:
-        open_file = open(directory + 'Tests/' + file_name, "wb")
+        open_file = open(directory + file_name, "wb")
         pickle.dump(listofanimes, open_file)
         open_file.close()
         print(len(listofanimes))
@@ -105,11 +106,11 @@ for i in range(48613, 49000):
         listofanimes.append(dictionary)
     except:
         pass
-open_file = open(directory + 'Tests/' + file_name, "wb")
+open_file = open(directory + file_name, "wb")
 pickle.dump(listofanimes, open_file)
 open_file.close()
 
-open_file = open(directory + 'Tests/' + "backup.pkl", "wb")
+open_file = open(directory + "backup.pkl", "wb")
 pickle.dump(listofanimes, open_file)
 open_file.close()
 playsound(r'C:\Users\Kniplip\Downloads\a.wav')
