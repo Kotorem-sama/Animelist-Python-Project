@@ -35,11 +35,9 @@ def checklistmaker(i):
     checklist = [listofanimes[i]["Anime"]]
     if listofanimes[i]["English"] != '':
         checklist.append(listofanimes[i]["English"])
-    try:
+    if listofanimes[i]["Synonyms"] != []:
         for yikerss in listofanimes[i]["Synonyms"]:
             checklist.append(yikerss)
-    except:
-        pass
     return checklist
 
 # Returns the anime that resembles the input the most.
@@ -93,7 +91,6 @@ def namelistmaker(namelist, changelist):
 # Checks if a given link exists
 def Linkchecker(Cleanlink, name, header=header):
     attempt = Cleanlink + name
-    print(attempt)
     r = req.get(attempt, timeout=20, headers=header)
     if r.status_code == 200:
         return r.url
@@ -132,6 +129,24 @@ def wheretowatch(namelist, year = None, Producers = []):
 
     return 'Not Found...'
 
+def changes(b, myanimelistpage):
+    if listofanimes[b]['Episodes'] == "Unknown":
+        Episodes = myanimelistpage.find('span', text="Episodes:").find_previous('div').text
+        Episodes = Episodes.replace('Episodes:', '').strip()
+        listofanimes[b]['Episodes'] = Episodes
+    if listofanimes[b]['Aired'] == "Not available" or listofanimes[b]['Aired'][-1] == "?":
+        try:
+            Aired = myanimelistpage.find('span', text="Premiered:").find_next('a').text
+            Aired = Aired.replace('Premiered:', '').strip()
+        except:
+            Aired = myanimelistpage.find('span', text="Aired:").find_previous('div').text
+            Aired = Aired.replace('Aired:', '').strip()
+        listofanimes[b]['Aired'] = Aired
+    if listofanimes[b]['Duration'] == "Unknown":
+        Duration = myanimelistpage.find('span', text="Duration:").find_previous('div').text
+        Duration = Duration.replace('Duration:', '').strip()
+        listofanimes[b]['Duration'] = Duration
+
 def whichanime():
     a = input("Which anime do you wish to know more about?: ")
     outcome = maximumsimilarity(a)
@@ -152,27 +167,8 @@ def whichanime():
             return None
     return b
 
-def changes(b, myanimelistpage):
-    if listofanimes[b]['Episodes'] == "Unknown":
-        Episodes = myanimelistpage.find('span', text="Episodes:").find_previous('div').text
-        Episodes = Episodes.replace('Episodes:', '').strip()
-        listofanimes[b]['Episodes'] = Episodes
-    if listofanimes[b]['Aired'] == "Not available" or listofanimes[b]['Aired'][-1] == "?":
-        try:
-            Aired = myanimelistpage.find('span', text="Premiered:").find_next('a').text
-            Aired = Aired.replace('Premiered:', '').strip()
-        except:
-            Aired = myanimelistpage.find('span', text="Aired:").find_previous('div').text
-            Aired = Aired.replace('Aired:', '').strip()
-        listofanimes[b]['Aired'] = Aired
-    if listofanimes[b]['Duration'] == "Unknown":
-        Duration = myanimelistpage.find('span', text="Duration:").find_previous('div').text
-        Duration = Duration.replace('Duration:', '').strip()
-        listofanimes[b]['Duration'] = Duration
-
 def search():
     b = whichanime()
-    print(b)
     a = listofanimes[b]
     for yi in a:
         key = yi
@@ -195,7 +191,11 @@ def search():
             spaces = (19 - len(key)) * " "
             print(key + ':' + spaces + value2)
     changes(b, myanimelistpage)
-    print(f"Where to watch:     {wheretowatch(checklistmaker(b))}")
+    Producers2 = myanimelistpage.find('span', text="Producers:").find_previous('div').find_all('a')
+    Producers = []
+    for i in Producers2:
+        Producers.append(i.text)
+    print(f"Where to watch:     {wheretowatch(checklistmaker(b), None, Producers)}")
 
 def similarity(a, b):
     return SequenceMatcher(None, a, b).ratio() * 100
@@ -419,19 +419,11 @@ def begin():
         search()
     begin()
 
-# begin2()
+begin2()
 
-open_file = open(directory + 'Tests/' + 'Listofanimes.pkl', "rb")
-listofanimes = pickle.load(open_file)
-open_file.close()
-
-for i in listofanimes:
-    for j in range(0, len(i["Anime"])):
-        try:
-            if i["Anime"][j-1] != " " and i["Anime"][j] == "x" and i["Anime"][j+1] != " ":
-                print(i["Anime"])
-        except:
-            pass
+# open_file = open(directory + 'Tests/' + 'Listofanimes.pkl', "rb")
+# listofanimes = pickle.load(open_file)
+# open_file.close()
 
 # b = "！"
 # a = []
