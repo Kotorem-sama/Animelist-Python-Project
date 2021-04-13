@@ -4,8 +4,12 @@ import pickle
 import sys
 import timeit
 
+fulllist1234 = []
+listofanimes = []
+
 directory = os.path.dirname(os.path.realpath(__file__)) + '\\'
 def test1():
+    global listofanimes
     with open(directory + 'Tests/' + 'Listofanimes.pkl', "rb") as L:
         listofanimes = pickle.load(L)
 
@@ -28,8 +32,14 @@ def test1():
 #     json.dump(list3, f)
 
 def test2():
+    global fulllist1234
     check = ["Listofanimes1.json", "Listofanimes2.json", "Listofanimes3.json"]
-    fulllist1234 = []
     for i in check:
         with open(directory + "JSON\\" + i, "r") as f:
             fulllist1234 += json.loads(json.load(f))
+
+test1()
+test2()
+
+print(sys.getsizeof(fulllist1234))
+print(sys.getsizeof(listofanimes))
