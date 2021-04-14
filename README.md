@@ -1,6 +1,7 @@
 # Animelist-Python-Project
 Will be converted to an actual application in c# one day i guess.
 Todolist:
+- put backup in appdata if possible
 - thing to check if myanimelist page exists
 - If the lists folder does not exist create a new one
 - completed list
