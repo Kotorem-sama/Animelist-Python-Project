@@ -1,7 +1,8 @@
 # Animelist-Python-Project
 Will be converted to an actual application in c# one day i guess.
 Todolist:
-- pickle to json
+- thing to check if myanimelist page exists
+- If the lists folder does not exist create a new one
 - completed list
 - on hold list
 - dropped list

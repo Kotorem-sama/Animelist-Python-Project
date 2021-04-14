@@ -1,4 +1,4 @@
-import pickle
+import json
 import os
 from random import choice
 from operator import itemgetter
@@ -10,16 +10,33 @@ import time
 import random
 import urllib
 from http.cookiejar import CookieJar
+from os import listdir
+from os.path import isfile, join
 
 directory = os.path.dirname(os.path.realpath(__file__)) + '\\'
-file_name = "Seasonal.pkl"
-animelist = lists = listofanimes = []
-deleted = False
+with open(directory + "settings.json", "r") as f:
+    settings = json.loads(json.load(f))
+lists2 = [f for f in listdir(directory + "JSON\\Lists") if isfile(join(directory + "JSON\\Lists", f))]
+lists = []
+for i in lists2:
+    j = i.replace('.json', '')
+    lists.append(j)
+if settings["standardlist"] == True:
+    file_name = settings["standardlistname"]
+else:
+    file_name = settings["lastanimelist"]
+animelist = []
+listofanimes = []
 header = {
     'host': 'crunchyroll.com',
     'referer': 'https://www.google.com/',
     'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/34.0.1847.131 Safari/537.36'
 }
+
+# Saves the animelist to json.
+def save(filename):
+    with open(directory + "JSON\\Lists\\" + filename + ".json", "w") as f:
+        json.dump(json.dumps(animelist), f)
 
 # Returns a list of anime names that now have the same length as the input.
 def lengthmaker(checklist, length):
@@ -60,9 +77,8 @@ def maximumsimilarity(a):
 # Returns the HTML of a website or if it doesn't exist it just returns soup
 def page_soupgetter(URL):
     try:
-        uClient = uReq(URL)
-        page_html = uClient.read()
-        uClient.close()
+        with uReq(URL) as uClient:
+            page_html = uClient.read()
         page_soup = soup(page_html, "html.parser")
     except:
         page_soup = soup()
@@ -148,7 +164,9 @@ def changes(b, myanimelistpage):
         listofanimes[b]['Duration'] = Duration
 
 def whichanime():
-    a = input("Which anime do you wish to know more about?: ")
+    a = input("Which anime are you looking for?: ")
+    if a.lower() == 'stop' or a.lower() == 'end' or a.lower() == 'cancel':
+        return None
     outcome = maximumsimilarity(a)
     if len(outcome) == 1:
         b = int(outcome[0])
@@ -169,53 +187,51 @@ def whichanime():
 
 def search():
     b = whichanime()
-    a = listofanimes[b]
-    for yi in a:
-        key = yi
-        value = a[yi]
-        if value == "" or value == []:
-            pass
-        else:
-            if type(value) == list:
-                value2 = value.pop(0)
-                if value != []:
-                    for listitem in value:
-                        value2 += ', ' + listitem
-            elif key == "Anime ID":
-                value2 = 'https://myanimelist.net/anime/' + value
-                myanimelistpage = page_soupgetter(value2)
-                Score = myanimelistpage.find('span', text="Score:").find_next('span').text
-                print("Score:              " + Score)
+    if b == None:
+        pass
+    else:
+        a = listofanimes[b]
+        for yi in a:
+            key = yi
+            value = a[yi]
+            if value == "" or value == []:
+                pass
             else:
-                value2 = value
-            spaces = (19 - len(key)) * " "
-            print(key + ':' + spaces + value2)
-    changes(b, myanimelistpage)
-    Producers2 = myanimelistpage.find('span', text="Producers:").find_previous('div').find_all('a')
-    Producers = []
-    for i in Producers2:
-        Producers.append(i.text)
-    print(f"Where to watch:     {wheretowatch(checklistmaker(b), None, Producers)}")
+                if type(value) == list:
+                    value2 = value.pop(0)
+                    if value != []:
+                        for listitem in value:
+                            value2 += ', ' + listitem
+                elif key == "Anime ID":
+                    value2 = 'https://myanimelist.net/anime/' + value
+                    myanimelistpage = page_soupgetter(value2)
+                    Score = myanimelistpage.find('span', text="Score:").find_next('span').text
+                    print("Score:              " + Score)
+                else:
+                    value2 = value
+                spaces = (19 - len(key)) * " "
+                print(key + ':' + spaces + value2)
+        changes(b, myanimelistpage)
+        Producers2 = myanimelistpage.find('span', text="Producers:").find_previous('div').find_all('a')
+        Producers = []
+        for i in Producers2:
+            Producers.append(i.text)
+        print(f"Where to watch:     {wheretowatch(checklistmaker(b), None, Producers)}")
 
 def similarity(a, b):
     return SequenceMatcher(None, a, b).ratio() * 100
 
 def load(file_name2):
-    global directory, animelist, deleted
-    if not deleted:
-        open_file = open(directory + 'Lists/' + file_name, "wb")
-        pickle.dump(animelist, open_file)
-        open_file.close()
-
-    open_file = open(directory + 'Lists/' + file_name2, "rb")
-    animelist = pickle.load(open_file)
-    open_file.close()
-    globalfile_name(file_name2)
-    deleted = False
-
-def globalfile_name(a):
-    global file_name
-    file_name = a
+    global directory, animelist, file_name, settings
+    file_name = file_name2
+    settings["lastanimelist"] = file_name2
+    with open(directory + "settings.json", "w") as f:
+        json.dump(json.dumps(settings), f)
+    try:
+        with open(directory + "JSON\\Lists\\" + file_name2 + ".json", "r") as f:
+            animelist = json.loads(json.load(f))
+    except:
+        print('egh')
 
 def addlist():
     global lists, directory
@@ -235,21 +251,16 @@ def addlist():
     
     if listname != '':
         lists.append(listname)
-        open_file = open(directory + "Lists.pkl", "wb")
-        pickle.dump(lists, open_file)
-        open_file.close()
 
-        newanimelist = []
-        open_file = open(directory + 'Lists/' + listname + '.pkl', "wb")
-        pickle.dump(newanimelist, open_file)
-        open_file.close()
+        with open(directory + '\\JSON\\Lists\\' + listname + '.json', "w") as f:
+            json.dump(json.dumps([]), f)
 
         c = input('Do you want to load ' + listname + '?: ')
         if c.lower() == 'yes':
-            load(listname + '.pkl')
+            load(listname)
 
 def deletelist():
-    global lists, deleted
+    global lists
     print(lists)
     a = input('Which list do you want to delete?: ')
     if a.lower() == 'stop' or a.lower() == 'end' or a.lower() == 'cancel':
@@ -258,17 +269,12 @@ def deletelist():
         b = input("Are you sure you want to delete '" + a + "'? (yes/no): ")
         if b.lower() == 'yes':
             lists.remove(a)
-            open_file = open(directory + "Lists.pkl", "wb")
-            pickle.dump(lists, open_file)
-            open_file.close()
-            path = directory + "Lists/" + a + ".pkl"
-            os.remove(path)
+            os.remove(directory + '\\JSON\\Lists\\' + a + ".json")
             print(lists)
             c = input('Which list do you want to load?: ')
             while c not in lists:
                 c = input('This list does not exist. Try again: ')
-            deleted = True
-            load(c + '.pkl')
+            load(c)
             print("Loaded list '" + c + "'")
     else:
         print('This list does not exist.')
@@ -276,56 +282,40 @@ def deletelist():
 
 def add(wayf):
     global animelist
-    a = input('Anime to add: ')
-    if a.lower() == 'stop' or a.lower() == 'end' or a.lower() == 'cancel':
-        pass
-    elif a in animelist:
-        print('This anime is already in the list.')
-        add(wayf)
-    else:
-        if wayf == 'Anime ID':
-            c = 'Not in the lixst'
+    if wayf == 'Anime ID':
+        c = ''
+        a = input("What is the Anime ID?: ")
+        if a.lower() == 'stop' or a.lower() == 'end' or a.lower() == 'cancel':
+            pass
+        else:
             for i in range(0, len(listofanimes)):
                 if str(listofanimes[i]["Anime ID"]) == str(a):
-                    c = listofanimes[i]["Anime"]
-            if c == 'Not in the list':
+                    c = i
+            if c == '':
                 print('This Anime ID does not exist.')
                 add(wayf)
             else:
-                b = input("Are you sure you want to add ' " + c + " '?: ")
-                if b.lower() == 'yes' or b == '':
-                    animelist.append(c)
-                add(wayf)
-        elif wayf == 'Anime':
-            maximumanimelist = maximumsimilarity(a)
-            if len(maximumanimelist) != 1:
-                for i in range(0, len(maximumanimelist)):
-                    print(f"{i + 1}. {listofanimes[maximumanimelist[i]]['Anime']} (English: {listofanimes[maximumanimelist[i]]['English']}) (Type: {listofanimes[maximumanimelist[i]]['Type']})")
-                d = input('Which anime do you wish to add? (number/stop): ')
-                try:
-                    d = int(d)
-                    chosenanime = int(maximumanimelist[d - 1])
-                    chosenanime2 = listofanimes[chosenanime]["Anime"]
-                    e = input("Are you sure you want to add ' " + chosenanime2 + " '? (yes/no): ")
-                    if e.lower() == 'yes':
-                        animelist.append(chosenanime2)
-                    else:
-                        print('Process Cancelled') 
-                except:
-                    print('Process Cancelled')
-                add(wayf)
-            elif len(maximumanimelist) == 0:
-                print("That's not funny. Get lost")
-                return
-            else:
-                maximumanime = maximumanimelist[0]
-                if maximumanime in animelist:
-                    print("No new anime found")
+                newanime = {"Index": c, "Anime": listofanimes[c]["Anime"]}
+                if newanime in animelist:
+                    print("Anime already in animelist")
                 else:
-                    d = input(f"Do you wish to add '{listofanimes[maximumanime]['Anime']} (English: {listofanimes[maximumanime]['English']})'? (yes/no): ")
-                    if d == 'yes':
-                        animelist.append(listofanimes[maximumanime]["Anime"])
+                    b = input("Are you sure you want to add ' " + listofanimes[c]["Anime"] + " '?: ")
+                    if b.lower() == 'yes' or b == '':
+                        animelist.append(newanime)
+                        save(file_name)
                 add(wayf)
+    elif wayf == 'Anime':
+        a = whichanime()
+        if a == None:
+            pass
+        else:
+            newanime = {"Index": a, "Anime": listofanimes[a]["Anime"]}
+            if newanime in animelist:
+                print("Anime already in animelist")
+            else:
+                animelist.append(newanime)
+                save(file_name)
+            add(wayf)
 
 def delete():
     global animelist
@@ -335,54 +325,50 @@ def delete():
     elif a.lower() == 'help' or a.lower() == 'print':
         printanimelist()
         delete()
-    elif a in animelist:
-        b = input("Are you sure you want to delete '" + a + "'?: ")
-        if b.lower() == 'yes' or b == '':
-            c = animelist.index(a)
-            animelist.pop(c)
-        delete()
     else:
-        print('This anime does not exist in this list.')
+        for i in animelist:
+            if i["Anime"] == a:
+                d = i
+                b = input("Are you sure you want to delete '" + d["Anime"] + "'?: ")
+                if b.lower() == 'yes' or b == '':
+                    c = animelist.index(d)
+                    animelist.pop(c)
+                    save(file_name)
+        if 'b' not in dir():
+            print('This anime does not exist in this list.')
         delete()
-        
 
 def sort2():
     global animelist
-    animelist.sort()
+    animelist = sorted(animelist, key = lambda i: i['Anime'])
+    save(file_name)
     print('Sorting Complete!')
 
 def printanimelist():
     a = 1
     global animelist
     for i in animelist:
-        print(str(a) + '. ' + i)
+        print(str(a) + '. ' + i["Anime"])
         a += 1
 
 def randomanime():
     global animelist
-    print(choice(animelist))
+    print(choice(animelist)["Anime"])
 
 def begin2():
     global animelist, file_name, lists, listofanimes
-    open_file = open(directory + 'Lists\\' + file_name, "rb")
-    animelist = pickle.load(open_file)
-    open_file.close()
-
-    open_file = open(directory + "Lists.pkl", "rb")
-    lists = pickle.load(open_file)
-    open_file.close()
+    load(file_name)
     
-    open_file = open(directory + 'Tests/' + 'Listofanimes.pkl', "rb")
-    listofanimes = pickle.load(open_file)
-    open_file.close()
-    listofanimes = listofanimes
+    check = [f for f in listdir(directory + "\\JSON") if isfile(join(directory + "\\JSON", f))]
+    for i in check:
+        with open(directory + "JSON\\" + i, "r") as f:
+            listofanimes += json.loads(json.load(f))
 
-    print("Loaded list 'Seasonal'")
+    print(f"Loaded list {file_name}")
     begin()
 
 def begin():
     global animelist, file_name
-    load(file_name)
     a = input('What do you want to do?: ')
     if a.lower() == 'add anime' or a.lower() == 'add':
         b = input('On what way do you want to add an anime? (Anime ID/Anime name): ')
@@ -391,9 +377,6 @@ def begin():
         else:
             add('Anime')
     elif a.lower() == 'stop' or a.lower() == 'end':
-        open_file = open(directory + 'Lists/' + file_name, "wb")
-        pickle.dump(animelist, open_file)
-        open_file.close()
         return print('Joe Joe!')
     elif a.lower() == 'sort' or a.lower() == 'sort list':
         sort2()
@@ -409,7 +392,7 @@ def begin():
         if b.lower() != 'stop' or b.lower() != 'end' or b.lower() != 'cancel':
             while b not in lists:
                 b = input('This list does not exist. Try again: ')
-            load(b + '.pkl')
+            load(b)
             print("Loaded list '" + b + "'")
     elif a.lower() == 'delete list':
         deletelist()
@@ -421,43 +404,6 @@ def begin():
 
 begin2()
 
-# open_file = open(directory + 'Tests/' + 'Listofanimes.pkl', "rb")
-# listofanimes = pickle.load(open_file)
-# open_file.close()
-
-# b = "！"
-# a = []
-
-# for yikers in b:
-#     a.append(yikers)
-
-# listofanimewithrandomcharacters = []
-# listending = []
-
-# # hebben char in naam
-# for i in listofanimes:
-#     for j in i["Anime"]:
-#         if j in a:
-#             listofanimewithrandomcharacters.append(i["Anime"])
-
-# # Eindigd op char
-# for i in listofanimes:
-#     if i["Anime"][-1] in a:
-#         listending.append(i["Anime"])
-
-# print('ending:')
-# for i in listending:
-#     print(i)
-
-# print('\nwith:')
-# for i in listofanimewithrandomcharacters:
-#     print(i)
-
-# # Search for data
-# for i in listofanimes:
-#     if i["Anime"] == "マンキーのアニメレビュー":
-#         print(i)
-
 # # Change Data
 # for i in range(0, len(listofanimes)):
 #     if listofanimes[i]["Anime"] == 'Young Alive! ~iPS細胞がひらく未来~':
@@ -465,31 +411,3 @@ begin2()
 #         a["Anime"] = "Young Alive!: iPS Saibou Ga Hiraku Mirai"
 #         listofanimes.insert(i, a)
 #         print(listofanimes[i-1]["Anime ID"], listofanimes[i]["Anime ID"], listofanimes[i+1]["Anime ID"])
-
-
-# for i in range(1, len(listofanimes)):
-#     if int(listofanimes[i]["Anime ID"]) < int(listofanimes[i-1]["Anime ID"]):
-#         g = i
-#         while int(listofanimes[i]["Anime ID"]) < int(listofanimes[g-1]["Anime ID"]):
-#             g = g - 1
-#         listofanimes.insert(g, listofanimes.pop(i))
-
-# open_file = open(directory + 'Tests/' + 'Listofanimes.pkl', "wb")
-# pickle.dump(listofanimes, open_file)
-# open_file.close()
-
-# # Searches for the biggest Anime ID gap
-# index1 = 0
-# index2 = 1
-# maximum = maximumindex1 = maximumindex2 = 0
-# for i in range (0, len(listofanimes)):
-#     try:
-#         if (int(listofanimes[index2]["Anime ID"]) - int(listofanimes[index1]["Anime ID"])) > maximum:
-#             maximum = int(listofanimes[index2]["Anime ID"]) - int(listofanimes[index1]["Anime ID"])
-#             maximumindex1 = index1
-#             maximumindex2 = index2
-#     except:
-#         pass
-#     index1 += 1
-#     index2 += 1
-# print(maximum, listofanimes[maximumindex1]["Anime ID"], listofanimes[maximumindex2]["Anime ID"])
