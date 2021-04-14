@@ -1,5 +1,4 @@
 import json
-import os
 from random import choice
 from operator import itemgetter
 from difflib import SequenceMatcher
@@ -10,23 +9,38 @@ import time
 import random
 import urllib
 from http.cookiejar import CookieJar
-from os import listdir
-from os.path import isfile, join
+from os import listdir, remove
+from os.path import isfile, join, dirname, realpath
 
-directory = os.path.dirname(os.path.realpath(__file__)) + '\\'
-with open(directory + "settings.json", "r") as f:
-    settings = json.loads(json.load(f))
-lists2 = [f for f in listdir(directory + "JSON\\Lists") if isfile(join(directory + "JSON\\Lists", f))]
+directory = dirname(realpath(__file__)) + '\\'
 lists = []
-for i in lists2:
-    j = i.replace('.json', '')
-    lists.append(j)
-if settings["standardlist"] == True:
-    file_name = settings["standardlistname"]
-else:
-    file_name = settings["lastanimelist"]
+settings = None
+file_name = None
 animelist = []
 listofanimes = []
+
+# Loads the first bits
+def start():
+    global lists, settings, file_name, listofanimes
+    listofanimes = []
+    lists = []
+    with open(directory + "settings.json", "r") as f:
+        settings = json.loads(json.load(f))
+    lists2 = [f for f in listdir(directory + "JSON\\Lists") if isfile(join(directory + "JSON\\Lists", f))]
+    for i in lists2:
+        j = i.replace('.json', '')
+        lists.append(j)
+    if settings["standardlist"] == True:
+        file_name = settings["standardlistname"]
+    else:
+        file_name = settings["lastanimelist"]
+    load(file_name)
+    check = [f for f in listdir(directory + "\\JSON") if isfile(join(directory + "\\JSON", f))]
+    for i in check:
+        with open(directory + "JSON\\" + i, "r") as f:
+            listofanimes += json.loads(json.load(f))
+    print(f"Loaded list '{file_name}'")
+
 header = {
     'host': 'crunchyroll.com',
     'referer': 'https://www.google.com/',
@@ -221,12 +235,16 @@ def search():
 def similarity(a, b):
     return SequenceMatcher(None, a, b).ratio() * 100
 
+def savesettings():
+    global settings
+    with open(directory + "settings.json", "w") as f:
+        json.dump(json.dumps(settings), f)
+
 def load(file_name2):
     global directory, animelist, file_name, settings
     file_name = file_name2
     settings["lastanimelist"] = file_name2
-    with open(directory + "settings.json", "w") as f:
-        json.dump(json.dumps(settings), f)
+    savesettings()
     try:
         with open(directory + "JSON\\Lists\\" + file_name2 + ".json", "r") as f:
             animelist = json.loads(json.load(f))
@@ -269,7 +287,7 @@ def deletelist():
         b = input("Are you sure you want to delete '" + a + "'? (yes/no): ")
         if b.lower() == 'yes':
             lists.remove(a)
-            os.remove(directory + '\\JSON\\Lists\\' + a + ".json")
+            remove(directory + '\\JSON\\Lists\\' + a + ".json")
             print(lists)
             c = input('Which list do you want to load?: ')
             while c not in lists:
@@ -338,6 +356,19 @@ def delete():
             print('This anime does not exist in this list.')
         delete()
 
+def whichlist():
+    print(lists)
+    b = input('Which list do you want to load?: ')
+    if b.lower() != 'stop' or b.lower() != 'end' or b.lower() != 'cancel':
+        while b not in lists:
+            b = input('This list does not exist. Try again: ')
+    return b
+
+def loadlist():
+    b = whichlist()
+    load(b)
+    print("Loaded list '" + b + "'")
+
 def sort2():
     global animelist
     animelist = sorted(animelist, key = lambda i: i['Anime'])
@@ -355,20 +386,46 @@ def randomanime():
     global animelist
     print(choice(animelist)["Anime"])
 
-def begin2():
-    global animelist, file_name, lists, listofanimes
-    load(file_name)
-    
-    check = [f for f in listdir(directory + "\\JSON") if isfile(join(directory + "\\JSON", f))]
-    for i in check:
-        with open(directory + "JSON\\" + i, "r") as f:
-            listofanimes += json.loads(json.load(f))
+def trueorfalsesetting(a):
+    global settings
+    b = input("True or False?: ")
+    if b.lower() == 'stop' or b.lower() == 'end':
+        pass
+    elif b.lower() == "true":
+        settings[a] = True
+    elif b.lower() == "false":
+        settings[a] = False
+    else:
+        trueorfalsesetting(a)
 
-    print(f"Loaded list {file_name}")
-    begin()
+def listsetting(a):
+    global settings
+    chosenlist = whichlist()
+    settings[a] = chosenlist
+
+
+def whichsetting():
+    a = input("Which setting do you want to change?: ")
+    if a.lower() == 'stop' or a.lower() == 'end':
+        pass
+    else:
+        while a not in settings:
+            a = input("This setting does not exist. Try again: ")
+        if type(settings[a]) == bool:
+            trueorfalsesetting(a)
+        elif a == "lastanimelist" or a == "standardlistname" == a:
+            listsetting(a)
+
+def setting():
+    global settings
+    for i in settings:
+        spaces = (19 - len(i)) * " "
+        print(f"{i}:{spaces}{settings[i]}")
+    whichsetting()
+    savesettings()
+    start()
 
 def begin():
-    global animelist, file_name
     a = input('What do you want to do?: ')
     if a.lower() == 'add anime' or a.lower() == 'add':
         b = input('On what way do you want to add an anime? (Anime ID/Anime name): ')
@@ -387,22 +444,19 @@ def begin():
     elif a.lower() == 'add list':
         addlist()
     elif a.lower() == 'load list' or a.lower() == 'load':
-        print(lists)
-        b = input('Which list do you want to load?: ')
-        if b.lower() != 'stop' or b.lower() != 'end' or b.lower() != 'cancel':
-            while b not in lists:
-                b = input('This list does not exist. Try again: ')
-            load(b)
-            print("Loaded list '" + b + "'")
+        loadlist()
     elif a.lower() == 'delete list':
         deletelist()
     elif a.lower() == 'random' or a.lower() == 'random anime':
         randomanime()
     elif a.lower() == 'search':
         search()
+    elif a.lower() == "settings":
+        setting()
     begin()
 
-begin2()
+start()
+begin()
 
 # # Change Data
 # for i in range(0, len(listofanimes)):
