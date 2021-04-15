@@ -1,6 +1,16 @@
 # Animelist-Python-Project
 Will be converted to an actual application in c# one day i guess.
 Todolist:
+- Add the wanted key to the dictionary with the index that is already given then you can sort it by that, it should be a temporary thing
+- Rewatching true or false and change location to watching watched amount 1+ in completed
+- Seperate list with anime in all lists to prevent doubles
+- watched amount 1+ in completed
+- watched episodes in every list
+- txt to list
+- xml to json
+- mal to program
+- way to merge lists
+- when converting txt and xml to lists ask for name and later if you want to merge it with another list
 - put backup in appdata if possible
 - thing to check if myanimelist page exists
 - If the lists folder does not exist create a new one
