@@ -35,10 +35,8 @@ def start():
     else:
         file_name = settings["lastanimelist"]
     load(file_name)
-    check = [f for f in listdir(directory + "\\JSON") if isfile(join(directory + "\\JSON", f))]
-    for i in check:
-        with open(directory + "JSON\\" + i, "r") as f:
-            listofanimes += json.loads(json.load(f))
+    with open(directory + "JSON\\listofanimes.json", "r") as f:
+        listofanimes += json.loads(json.load(f))
     print(f"Loaded list '{file_name}'")
 
 header = {
@@ -358,7 +356,7 @@ def delete():
 
 def whichlist():
     print(lists)
-    b = input('Which list do you want to load?: ')
+    b = input('Which list are you looking for?: ')
     if b.lower() != 'stop' or b.lower() != 'end' or b.lower() != 'cancel':
         while b not in lists:
             b = input('This list does not exist. Try again: ')
