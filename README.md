@@ -19,6 +19,7 @@ Todolist:
 - dropped list
 - days watched calculator
 - making code more readable and clean
+- add offline mode
 - Make a statistics page where you can see how many percentage you've completed from a certain genre/studio/etc.
 - Make a function that automaticly checks for new anime on myanimelist (figure out how to do that as a background process)
 - Make it possible to watch anime on the application by copying the video url from the existing website with bs4

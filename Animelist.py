@@ -9,35 +9,59 @@ import time
 import random
 import urllib
 from http.cookiejar import CookieJar
-from os import listdir, remove
+from os import listdir, remove, rename, mkdir
 from os.path import isfile, join, dirname, realpath
 
 directory = dirname(realpath(__file__)) + '\\'
 lists = []
 settings = None
-file_name = None
+list_name = None
 animelist = []
 listofanimes = []
+emptyanimelist = [{"List": "Watching"}, {"List": "Completed"}, {"List": "On Hold"}, {"List": "Dropped"}, {"List": "Plan to Watch"}]
+emptysettings = {"lastanimelist": "Watching", "standardlist": False, "standardlistname": "Watching", "sorting": "Anime"}
 
-# Loads the first bits
+# New function to load json files.
+def newload(directory2):
+    with open(directory2, "r") as f:
+        loading = json.loads(json.load(f))
+    return loading
+
+# New function to save json files.
+def newsave(directory2, itemtosave):
+    with open(directory2, "w") as f:
+        json.dump(json.dumps(itemtosave), f)
+
+# Will make it possible to use the project even if you don't have the other files such as settings and an animelist.
+def filedoesnotexistfix(filename, folderdirectory, emptystate):
+    try:
+        data = newload(folderdirectory + "\\" + filename)
+    except:
+        try:
+            mkdir(folderdirectory)
+            newsave(folderdirectory + "\\" + filename, emptystate)
+            data = emptystate
+        except:
+            newsave(folderdirectory + "\\" + filename, emptystate)
+            data = emptystate
+    return data
+
+# Loads the first bits.
 def start():
-    global lists, settings, file_name, listofanimes
-    listofanimes = []
+    global lists, settings, list_name, listofanimes, animelist
+    settings = filedoesnotexistfix("settings.json", directory + "JSON", emptysettings)
+    listofanimes = newload(directory + "JSON\\listofanimes.json")
+    animelist = filedoesnotexistfix("lists.json", directory + "JSON", emptyanimelist)
     lists = []
-    with open(directory + "settings.json", "r") as f:
-        settings = json.loads(json.load(f))
-    lists2 = [f for f in listdir(directory + "JSON\\Lists") if isfile(join(directory + "JSON\\Lists", f))]
-    for i in lists2:
-        j = i.replace('.json', '')
-        lists.append(j)
+    for m in animelist:
+        if m["List"] not in lists:
+            lists.append(m["List"])
     if settings["standardlist"] == True:
         file_name = settings["standardlistname"]
     else:
         file_name = settings["lastanimelist"]
-    load(file_name)
-    with open(directory + "JSON\\listofanimes.json", "r") as f:
-        listofanimes += json.loads(json.load(f))
-    print(f"Loaded list '{file_name}'")
+    
+    print(f"You are currently viewing '{file_name}'")
 
 header = {
     'host': 'crunchyroll.com',
@@ -45,10 +69,10 @@ header = {
     'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/34.0.1847.131 Safari/537.36'
 }
 
-# Saves the animelist to json.
-def save(filename):
-    with open(directory + "JSON\\Lists\\" + filename + ".json", "w") as f:
-        json.dump(json.dumps(animelist), f)
+# # Saves the animelist to json.
+# def save(filename):
+#     with open(directory + "JSON\\Lists\\" + filename + ".json", "w") as f:
+#         json.dump(json.dumps(animelist), f)
 
 # Returns a list of anime names that now have the same length as the input.
 def lengthmaker(checklist, length):
@@ -123,8 +147,7 @@ def Linkchecker(Cleanlink, name, header=header):
     if r.status_code == 200:
         return r.url
 
-# Returns the first link that exists or returns the text 'Not Found...'. In that case i will try to find an accessible
-# website where you can watch it.
+# Returns the first link that exists or 'Not Found...' if it doesn't exist. In that case I will try to find an accessible website where you can watch it.
 def wheretowatch(namelist, year = None, Producers = []):
     links = ["https://gogoanime.ai/category/", "https://www2.kickassanime.rs/anime/", "https://kissanime.ru.com/series/", "https://www1.animeshow.tv/", "https://www.animefreak.tv/watch/"]
     forbidden = [None, "https://www2.kickassanime.rs/", "https://www2.kickassanime.rs/anime/", "https://www1.animeshow.tv"]
@@ -224,36 +247,21 @@ def search():
                 spaces = (19 - len(key)) * " "
                 print(key + ':' + spaces + value2)
         changes(b, myanimelistpage)
-        Producers2 = myanimelistpage.find('span', text="Producers:").find_previous('div').find_all('a')
-        Producers = []
-        for i in Producers2:
-            Producers.append(i.text)
-        print(f"Where to watch:     {wheretowatch(checklistmaker(b), None, Producers)}")
+        print(f"Where to watch:     {wheretowatch(checklistmaker(b), None)}")
 
 def similarity(a, b):
     return SequenceMatcher(None, a, b).ratio() * 100
 
-def savesettings():
-    global settings
-    with open(directory + "settings.json", "w") as f:
-        json.dump(json.dumps(settings), f)
-
-def load(file_name2):
-    global directory, animelist, file_name, settings
-    file_name = file_name2
-    settings["lastanimelist"] = file_name2
-    savesettings()
-    try:
-        with open(directory + "JSON\\Lists\\" + file_name2 + ".json", "r") as f:
-            animelist = json.loads(json.load(f))
-    except:
-        print('egh')
+def load(file_name):
+    global animelist, settings, list_name
+    settings["lastanimelist"] = file_name
+    newsave(directory + "JSON\\settings.json", settings)
+    list_name = file_name
 
 def addlist():
-    global lists, directory
+    global lists, directory, animelist
     listname = ''
     a = input('What will be the name of the new list?: ')
-
     if a.lower() == 'stop' or a.lower() == 'end' or a.lower() == 'cancel':
         pass
     elif a in lists:
@@ -264,16 +272,20 @@ def addlist():
             addlist()
     else:
         listname = a
-    
-    if listname != '':
+    if listname != '' or listname != " ":
         lists.append(listname)
-
-        with open(directory + '\\JSON\\Lists\\' + listname + '.json', "w") as f:
-            json.dump(json.dumps([]), f)
-
+        animelist.append({"List": listname})
+        newsave(directory + "JSON\\lists.json", animelist)
         c = input('Do you want to load ' + listname + '?: ')
         if c.lower() == 'yes':
             load(listname)
+
+def actualdeletelist(name):
+    global animelist
+    for i in animelist:
+        if i["List"] == name:
+            animelist.remove(i)
+    newsave(directory + "JSON\\lists.json", animelist)
 
 def deletelist():
     global lists
@@ -285,7 +297,7 @@ def deletelist():
         b = input("Are you sure you want to delete '" + a + "'? (yes/no): ")
         if b.lower() == 'yes':
             lists.remove(a)
-            remove(directory + '\\JSON\\Lists\\' + a + ".json")
+            actualdeletelist(a)
             print(lists)
             c = input('Which list do you want to load?: ')
             while c not in lists:
@@ -298,6 +310,7 @@ def deletelist():
 
 def add(wayf):
     global animelist
+    newanime = {"Index": "", "Anime": "", "List": list_name, "Watched": 0, "Watched Episodes": 0, "Rating": None}
     if wayf == 'Anime ID':
         c = ''
         a = input("What is the Anime ID?: ")
@@ -311,30 +324,37 @@ def add(wayf):
                 print('This Anime ID does not exist.')
                 add(wayf)
             else:
-                newanime = {"Index": c, "Anime": listofanimes[c]["Anime"]}
-                if newanime in animelist:
+                newanime["Index"] = c
+                newanime["Anime"] = listofanimes[c]["Anime"]
+                inlist = False
+                for l in animelist:
+                    if l["Index"] == c:
+                        inlist = True
+                if inlist:
                     print("Anime already in animelist")
                 else:
-                    b = input("Are you sure you want to add ' " + listofanimes[c]["Anime"] + " '?: ")
+                    b = input("Are you sure you want to add '" + listofanimes[c]["Anime"] + "'?: ")
                     if b.lower() == 'yes' or b == '':
                         animelist.append(newanime)
-                        save(file_name)
+                        newsave(directory + "JSON\\lists.json", animelist)
                 add(wayf)
     elif wayf == 'Anime':
         a = whichanime()
         if a == None:
             pass
         else:
-            newanime = {"Index": a, "Anime": listofanimes[a]["Anime"]}
+            newanime["Index"] = a
+            newanime["Anime"] = listofanimes[a]["Anime"]
             if newanime in animelist:
                 print("Anime already in animelist")
             else:
                 animelist.append(newanime)
-                save(file_name)
+                newsave(directory + "JSON\\lists.json", animelist)
             add(wayf)
 
 def delete():
     global animelist
+    b = ''
     a = input('Which anime do you want to remove from the list: ')
     if a.lower() == 'stop' or a.lower() == 'end' or a.lower() == 'cancel':
         pass
@@ -344,13 +364,12 @@ def delete():
     else:
         for i in animelist:
             if i["Anime"] == a:
-                d = i
-                b = input("Are you sure you want to delete '" + d["Anime"] + "'?: ")
+                b = input("Are you sure you want to delete '" + i["Anime"] + "'?: ")
                 if b.lower() == 'yes' or b == '':
-                    c = animelist.index(d)
-                    animelist.pop(c)
-                    save(file_name)
-        if 'b' not in dir():
+                    animelist.remove(i)
+                    newsave(directory + "JSON\\lists.json", animelist)
+                    break
+        if b != '':
             print('This anime does not exist in this list.')
         delete()
 
@@ -365,12 +384,20 @@ def whichlist():
 def loadlist():
     b = whichlist()
     load(b)
-    print("Loaded list '" + b + "'")
+    print(f"You are currently viewing '{list_name}'")
 
 def sort2():
     global animelist
-    animelist = sorted(animelist, key = lambda i: i['Anime'])
-    save(file_name)
+    sortmode = settings["sorting"]
+    for i in animelist:
+        if "Anime" in i:
+            checkforsortpossibility = i
+            break
+    if sortmode not in checkforsortpossibility:
+        for j in animelist:
+            j[sortmode] = listofanimes[j["Index"]][sortmode]
+    animelist = sorted(animelist, key = lambda i: i[sortmode])
+    newsave(directory + "JSON\\lists.json", animelist)
     print('Sorting Complete!')
 
 def printanimelist():
@@ -401,7 +428,6 @@ def listsetting(a):
     chosenlist = whichlist()
     settings[a] = chosenlist
 
-
 def whichsetting():
     a = input("Which setting do you want to change?: ")
     if a.lower() == 'stop' or a.lower() == 'end':
@@ -414,13 +440,21 @@ def whichsetting():
         elif a == "lastanimelist" or a == "standardlistname" == a:
             listsetting(a)
 
+def changename(listname, newlistname):
+    global lists
+    lists.remove(listname)
+    lists.append(newlistname)
+    rename(directory + '\\JSON\\Lists\\' + listname + ".json", directory + '\\JSON\\Lists\\' + newlistname + ".json")
+    if listname == list_name:
+        load(newlistname)
+
 def setting():
     global settings
     for i in settings:
         spaces = (19 - len(i)) * " "
         print(f"{i}:{spaces}{settings[i]}")
     whichsetting()
-    savesettings()
+    newsave(directory + "JSON\\settings.json", settings)
     start()
 
 def begin():
@@ -451,6 +485,10 @@ def begin():
         search()
     elif a.lower() == "settings":
         setting()
+    elif a.lower() == "change listname":
+        name = whichlist()
+        newname = input("What will the new name of the list be?: ")
+        changename(name, newname)
     begin()
 
 start()
