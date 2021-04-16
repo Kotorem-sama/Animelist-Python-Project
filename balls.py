@@ -61,16 +61,3 @@ for j in lis:
     j["Rating"] = None
     print(j)
 
-lis.append({"List": "Watching"})
-lis.append({"List": "Completed"})
-lis.append({"List": "On Hold"})
-lis.append({"List": "Dropped"})
-
-lists = []
-
-for m in lis:
-    if m["List"] not in lists:
-        lists.append(m["List"])
-
-with open(directory + "JSON\\lists.json", "w") as f:
-    json.dump(json.dumps(lis), f)

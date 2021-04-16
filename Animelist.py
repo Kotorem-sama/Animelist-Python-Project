@@ -20,6 +20,7 @@ animelist = []
 listofanimes = []
 emptyanimelist = [{"List": "Watching"}, {"List": "Completed"}, {"List": "On Hold"}, {"List": "Dropped"}, {"List": "Plan to Watch"}]
 emptysettings = {"lastanimelist": "Watching", "standardlist": False, "standardlistname": "Watching", "sorting": "Anime"}
+newfile = False
 
 # New function to load json files.
 def newload(directory2):
@@ -34,6 +35,7 @@ def newsave(directory2, itemtosave):
 
 # Will make it possible to use the project even if you don't have the other files such as settings and an animelist.
 def filedoesnotexistfix(filename, folderdirectory, emptystate):
+    global newfile
     try:
         data = newload(folderdirectory + "\\" + filename)
     except:
@@ -41,14 +43,18 @@ def filedoesnotexistfix(filename, folderdirectory, emptystate):
             mkdir(folderdirectory)
             newsave(folderdirectory + "\\" + filename, emptystate)
             data = emptystate
+            if filename == "lists.json":
+                newfile = True
         except:
             newsave(folderdirectory + "\\" + filename, emptystate)
             data = emptystate
+            if filename == "lists.json":
+                newfile = True
     return data
 
 # Loads the first bits.
 def start():
-    global lists, settings, list_name, listofanimes, animelist
+    global lists, settings, list_name, listofanimes, animelist, newfile
     settings = filedoesnotexistfix("settings.json", directory + "JSON", emptysettings)
     listofanimes = newload(directory + "JSON\\listofanimes.json")
     animelist = filedoesnotexistfix("lists.json", directory + "JSON", emptyanimelist)
@@ -56,12 +62,18 @@ def start():
     for m in animelist:
         if m["List"] not in lists:
             lists.append(m["List"])
-    if settings["standardlist"] == True:
-        file_name = settings["standardlistname"]
+    if newfile:
+        settings["lastanimelist"] = lists[0]
+        settings["standardlistname"] = lists[0]
+        newsave(directory + "JSON\\settings.json", settings)
+        list_name = lists[0]
+        newfile = False
     else:
-        file_name = settings["lastanimelist"]
-    
-    print(f"You are currently viewing '{file_name}'")
+        if settings["standardlist"] == True:
+            list_name = settings["standardlistname"]
+        else:
+            list_name = settings["lastanimelist"]
+    print(f"You are currently viewing '{list_name}'")
 
 header = {
     'host': 'crunchyroll.com',
@@ -112,12 +124,9 @@ def maximumsimilarity(a):
 
 # Returns the HTML of a website or if it doesn't exist it just returns soup
 def page_soupgetter(URL):
-    try:
-        with uReq(URL) as uClient:
-            page_html = uClient.read()
-        page_soup = soup(page_html, "html.parser")
-    except:
-        page_soup = soup()
+    with uReq(URL) as uClient:
+        page_html = uClient.read()
+    page_soup = soup(page_html, "html.parser")
     return page_soup
 
 # Returns the given namelist, but it's now URL ready
@@ -182,24 +191,17 @@ def wheretowatch(namelist, year = None, Producers = []):
 
 def changes(b, myanimelistpage):
     if listofanimes[b]['Episodes'] == "Unknown":
-        Episodes = myanimelistpage.find('span', text="Episodes:").find_previous('div').text
-        Episodes = Episodes.replace('Episodes:', '').strip()
-        listofanimes[b]['Episodes'] = Episodes
+        listofanimes[b]['Episodes'] = infotext(myanimelistpage, 'Episodes:')
     if listofanimes[b]['Aired'] == "Not available" or listofanimes[b]['Aired'][-1] == "?":
         try:
-            Aired = myanimelistpage.find('span', text="Premiered:").find_next('a').text
-            Aired = Aired.replace('Premiered:', '').strip()
+            listofanimes[b]['Aired'] = infotext(myanimelistpage, 'Premiered:')
         except:
-            Aired = myanimelistpage.find('span', text="Aired:").find_previous('div').text
-            Aired = Aired.replace('Aired:', '').strip()
-        listofanimes[b]['Aired'] = Aired
+            listofanimes[b]['Aired'] = infotext(myanimelistpage, 'Aired:')
     if listofanimes[b]['Duration'] == "Unknown":
-        Duration = myanimelistpage.find('span', text="Duration:").find_previous('div').text
-        Duration = Duration.replace('Duration:', '').strip()
-        listofanimes[b]['Duration'] = Duration
+        listofanimes[b]['Duration'] = infotext(myanimelistpage, 'Duration:')
+    listofanimes[b]["Score"] = myanimelistpage.find('span', text="Score:").find_next('span').text
 
-def whichanime():
-    a = input("Which anime are you looking for?: ")
+def whichanime(a):
     if a.lower() == 'stop' or a.lower() == 'end' or a.lower() == 'cancel':
         return None
     outcome = maximumsimilarity(a)
@@ -220,11 +222,39 @@ def whichanime():
             return None
     return b
 
+def infolist(myanimelistpage, data2):
+    list2 = myanimelistpage.find('span', text=data2).find_previous('div').find_all('a')
+    list1 = []
+    for i in list2:
+        list1.append(i.text)
+    return list1
+
+def infotext(myanimelistpage, data2):
+    text = myanimelistpage.find('span', text=data2).find_previous('div').text
+    return text.replace(data2, '').strip()
+
+def getlastdata(index, myanimelistpage):
+    listofanimes[index]["Studios"] = infolist(myanimelistpage, "Studios:")
+    listofanimes[index]["Licensors"] = infolist(myanimelistpage, "Licensors:")
+    listofanimes[index]["Producers"] = infolist(myanimelistpage, "Producers:")
+    listofanimes[index]["Source"] = infotext(myanimelistpage, "Source:")
+    listofanimes[index]["Score"] = myanimelistpage.find('span', text="Score:").find_next('span').text
+    listofanimes[index]["Members"] = infotext(myanimelistpage, "Members:")
+
 def search():
-    b = whichanime()
+    b = whichanime(input("Which anime are you looking for?: "))
     if b == None:
         pass
     else:
+        URL = 'https://myanimelist.net/anime/' + listofanimes[b]["Anime ID"]
+        try:
+            myanimelistpage = page_soupgetter(URL)
+            if listofanimes[b]["Score"] == "":
+                getlastdata(b, myanimelistpage)
+            else:
+                changes(b, myanimelistpage)
+        except:
+            print("Myanimelist page does not exist anymore.")
         a = listofanimes[b]
         for yi in a:
             key = yi
@@ -237,16 +267,10 @@ def search():
                     if value != []:
                         for listitem in value:
                             value2 += ', ' + listitem
-                elif key == "Anime ID":
-                    value2 = 'https://myanimelist.net/anime/' + value
-                    myanimelistpage = page_soupgetter(value2)
-                    Score = myanimelistpage.find('span', text="Score:").find_next('span').text
-                    print("Score:              " + Score)
                 else:
                     value2 = value
                 spaces = (19 - len(key)) * " "
                 print(key + ':' + spaces + value2)
-        changes(b, myanimelistpage)
         print(f"Where to watch:     {wheretowatch(checklistmaker(b), None)}")
 
 def similarity(a, b):
@@ -291,31 +315,60 @@ def deletelist():
     global lists
     print(lists)
     a = input('Which list do you want to delete?: ')
-    if a.lower() == 'stop' or a.lower() == 'end' or a.lower() == 'cancel':
-        pass
-    elif a in lists:
-        b = input("Are you sure you want to delete '" + a + "'? (yes/no): ")
+    name = whichlist(a)
+    if name != None:
+        b = input("Are you sure you want to delete '" + name + "'? (yes/no): ")
         if b.lower() == 'yes':
-            lists.remove(a)
-            actualdeletelist(a)
-            print(lists)
-            c = input('Which list do you want to load?: ')
-            while c not in lists:
-                c = input('This list does not exist. Try again: ')
-            load(c)
-            print("Loaded list '" + c + "'")
+            lists.remove(name)
+            actualdeletelist(name)
+            if list_name == name:
+                print(lists)
+                c = input('Which list do you want to load?: ')
+                b = whichlist(c)
+                if b == None:
+                    return
+                load(b)
+                print("Loaded list '" + b + "'")
+
+def actualaddanime(newanime, c):
+    global animelist
+    newanime["Index"] = c
+    newanime["Anime"] = listofanimes[c]["Anime"]
+    inlist = False
+    for l in range(0, len(animelist)):
+        try:
+            if animelist[l]["Index"] == c:
+                inlist = True
+                inlistname = l
+                inlistactualname = animelist[l]["List"]
+        except:
+            pass
+    if inlist:
+        if inlistname == list_name:
+            print("Anime already in animelist")
+        else:
+            changelist = input(f"This anime already exists in {inlistactualname}. Do you want to add it to {list_name}? (yes/no): ")
+            if changelist.lower() == "yes":
+                changewhichlist(inlistname, list_name)
     else:
-        print('This list does not exist.')
-        deletelist()
+        b = input("Are you sure you want to add '" + listofanimes[c]["Anime"] + "'?: ")
+        if b.lower() == 'yes' or b == '':
+            animelist.append(newanime)
+            newsave(directory + "JSON\\lists.json", animelist)
+
+def changewhichlist(index, listnametochangeto):
+    global animelist
+    animelist[index]["List"] = listnametochangeto
+    newsave(directory + "JSON\\lists.json", animelist)
 
 def add(wayf):
-    global animelist
+    global animelist, list_name
     newanime = {"Index": "", "Anime": "", "List": list_name, "Watched": 0, "Watched Episodes": 0, "Rating": None}
     if wayf == 'Anime ID':
         c = ''
         a = input("What is the Anime ID?: ")
         if a.lower() == 'stop' or a.lower() == 'end' or a.lower() == 'cancel':
-            pass
+            return
         else:
             for i in range(0, len(listofanimes)):
                 if str(listofanimes[i]["Anime ID"]) == str(a):
@@ -324,32 +377,14 @@ def add(wayf):
                 print('This Anime ID does not exist.')
                 add(wayf)
             else:
-                newanime["Index"] = c
-                newanime["Anime"] = listofanimes[c]["Anime"]
-                inlist = False
-                for l in animelist:
-                    if l["Index"] == c:
-                        inlist = True
-                if inlist:
-                    print("Anime already in animelist")
-                else:
-                    b = input("Are you sure you want to add '" + listofanimes[c]["Anime"] + "'?: ")
-                    if b.lower() == 'yes' or b == '':
-                        animelist.append(newanime)
-                        newsave(directory + "JSON\\lists.json", animelist)
+                actualaddanime(newanime, c)
                 add(wayf)
     elif wayf == 'Anime':
-        a = whichanime()
+        a = whichanime(input("Which anime do you want to add?: "))
         if a == None:
             pass
         else:
-            newanime["Index"] = a
-            newanime["Anime"] = listofanimes[a]["Anime"]
-            if newanime in animelist:
-                print("Anime already in animelist")
-            else:
-                animelist.append(newanime)
-                newsave(directory + "JSON\\lists.json", animelist)
+            actualaddanime(newanime, a)
             add(wayf)
 
 def delete():
@@ -363,53 +398,104 @@ def delete():
         delete()
     else:
         for i in animelist:
-            if i["Anime"] == a:
-                b = input("Are you sure you want to delete '" + i["Anime"] + "'?: ")
-                if b.lower() == 'yes' or b == '':
-                    animelist.remove(i)
-                    newsave(directory + "JSON\\lists.json", animelist)
-                    break
+            try:
+                if i["Anime"] == a:
+                    b = input("Are you sure you want to delete '" + i["Anime"] + "'?: ")
+                    if b.lower() == 'yes' or b == '':
+                        animelist.remove(i)
+                        newsave(directory + "JSON\\lists.json", animelist)
+                        break
+            except:
+                pass
         if b != '':
             print('This anime does not exist in this list.')
         delete()
 
-def whichlist():
-    print(lists)
-    b = input('Which list are you looking for?: ')
-    if b.lower() != 'stop' or b.lower() != 'end' or b.lower() != 'cancel':
+def whichlist(b):
+    if b.lower() == 'stop' or b.lower() == 'end' or b.lower() == 'cancel':
+        return None
+    else:
         while b not in lists:
             b = input('This list does not exist. Try again: ')
     return b
 
 def loadlist():
-    b = whichlist()
+    print(lists)
+    a = input('Which list do you want to access?: ')
+    b = whichlist(a)
+    if b == None:
+        return
     load(b)
     print(f"You are currently viewing '{list_name}'")
 
 def sort2():
     global animelist
     sortmode = settings["sorting"]
+    reverse = False
+    if sortmode == "Score":
+        reverse = True
     for i in animelist:
-        if "Anime" in i:
+        try:
+            useless = i["Anime"]
+            useless = useless
             checkforsortpossibility = i
             break
+        except:
+            pass
     if sortmode not in checkforsortpossibility:
         for j in animelist:
-            j[sortmode] = listofanimes[j["Index"]][sortmode]
-    animelist = sorted(animelist, key = lambda i: i[sortmode])
+            try:
+                j[sortmode] = listofanimes[j["Index"]][sortmode]
+            except:
+                pass
+    newanimelist = []
+    empties = []
+    for item in animelist:
+        try:
+            useless = item["Anime"]
+            useless = useless
+            newanimelist.append(item)
+        except:
+            empties.append(item)
+    animelist = sorted(newanimelist, key = lambda i: i[sortmode], reverse=reverse) + empties
     newsave(directory + "JSON\\lists.json", animelist)
     print('Sorting Complete!')
 
+def changelistname():
+    print(lists)
+    z = input('The name of which list do you want to change?: ')
+    name = whichlist(z)
+    if name == None:
+        return
+    newname = input("What will the new name of the list be?: ")
+    changename(name, newname)
+
 def printanimelist():
     a = 1
-    global animelist
+    global animelist, list_name
     for i in animelist:
-        print(str(a) + '. ' + i["Anime"])
-        a += 1
+        try:
+            if i["List"] == list_name:
+                if settings['sorting'] == "Anime":
+                    print(f"{str(a)}. {i['Anime']}")
+                else:
+                    print(f"{str(a)}. {i['Anime']} {settings['sorting']}: {i[settings['sorting']]}")
+                a += 1
+        except:
+            pass
 
 def randomanime():
     global animelist
-    print(choice(animelist)["Anime"])
+    choicelist = []
+    for i in animelist:
+        try:
+            if i["List"] == list_name:
+                useless = i["Anime"]
+                useless = useless
+                choicelist.append(i)
+        except:
+            pass
+    print(choice(choicelist)["Anime"])
 
 def trueorfalsesetting(a):
     global settings
@@ -425,26 +511,44 @@ def trueorfalsesetting(a):
 
 def listsetting(a):
     global settings
-    chosenlist = whichlist()
+    print(lists)
+    b = input('Which list do you want this setting to change to?: ')
+    chosenlist = whichlist(b)
+    if chosenlist == None:
+        return
     settings[a] = chosenlist
+
+def changesortingmethod():
+    global settings
+    choiceslist = ["Anime", "English", "Anime ID", "Type", "Episodes", "Aired", "Rating", "ActualDuration", "Source", "Score", "Members", "Watched", "Watched Episodes", "Rating"]
+    print(choiceslist)
+    chosensortmethod = input("Which sorting method do you want to use?: ")
+    while chosensortmethod not in choiceslist:
+        chosensortmethod = input("This sorting method does not exist. Try again: ")
+    settings["sorting"] = chosensortmethod
 
 def whichsetting():
     a = input("Which setting do you want to change?: ")
     if a.lower() == 'stop' or a.lower() == 'end':
         pass
     else:
-        while a not in settings:
+        while a.lower() not in settings:
             a = input("This setting does not exist. Try again: ")
         if type(settings[a]) == bool:
             trueorfalsesetting(a)
-        elif a == "lastanimelist" or a == "standardlistname" == a:
+        elif a.lower() == "lastanimelist" or a.lower() == "standardlistname":
             listsetting(a)
+        elif a.lower() == "sorting":
+            changesortingmethod()
 
 def changename(listname, newlistname):
-    global lists
+    global lists, animelist
     lists.remove(listname)
     lists.append(newlistname)
-    rename(directory + '\\JSON\\Lists\\' + listname + ".json", directory + '\\JSON\\Lists\\' + newlistname + ".json")
+    for i in animelist:
+        if i["List"] == listname:
+            i["List"] = newlistname
+    newsave(directory + "JSON\\lists.json", animelist)
     if listname == list_name:
         load(newlistname)
 
@@ -486,9 +590,7 @@ def begin():
     elif a.lower() == "settings":
         setting()
     elif a.lower() == "change listname":
-        name = whichlist()
-        newname = input("What will the new name of the list be?: ")
-        changename(name, newname)
+        changelistname()
     begin()
 
 start()
