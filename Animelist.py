@@ -96,22 +96,32 @@ def lengthmaker(checklist, length):
     return checklist2
 
 # Returns a list for the similarity check with anime names.
-def checklistmaker(i):
-    checklist = [listofanimes[i]["Anime"]]
-    if listofanimes[i]["English"] != '':
-        checklist.append(listofanimes[i]["English"])
-    if listofanimes[i]["Synonyms"] != []:
-        for yikerss in listofanimes[i]["Synonyms"]:
-            checklist.append(yikerss)
+def checklistmaker(i, chosenlist4):
+    checklist = []
+    try:
+        checklist = [chosenlist4[i]["Anime"]]
+    except:
+        pass
+    try:
+        if chosenlist4[i]["English"] != '':
+            checklist.append(chosenlist4[i]["English"])
+    except:
+        pass
+    try:
+        if chosenlist4[i]["Synonyms"] != []:
+            for yikerss in chosenlist4[i]["Synonyms"]:
+                checklist.append(yikerss)
+    except:
+        pass
     return checklist
 
 # Returns the anime that resembles the input the most.
-def maximumsimilarity(a):
+def maximumsimilarity(a, chosenlist2):
     maximum = 50
     maximumanimelist = []
     a = a.lower()
-    for i in range(0, len(listofanimes)):
-        checklist = lengthmaker(checklistmaker(i), len(a))
+    for i in range(0, len(chosenlist2)):
+        checklist = lengthmaker(checklistmaker(i, chosenlist2), len(a))
         for j in checklist:
             b = j.lower()
             sim = similarity(b, a)
@@ -201,10 +211,10 @@ def changes(b, myanimelistpage):
         listofanimes[b]['Duration'] = infotext(myanimelistpage, 'Duration:')
     listofanimes[b]["Score"] = myanimelistpage.find('span', text="Score:").find_next('span').text
 
-def whichanime(a):
+def whichanime(a, chosenlist3):
     if a.lower() == 'stop' or a.lower() == 'end' or a.lower() == 'cancel':
         return None
-    outcome = maximumsimilarity(a)
+    outcome = maximumsimilarity(a, chosenlist3)
     if len(outcome) == 1:
         b = int(outcome[0])
     elif len(outcome) == 0:
@@ -212,7 +222,7 @@ def whichanime(a):
         return None
     else:
         for i in range(0, len(outcome)):
-            print(f"{i + 1}. {listofanimes[outcome[i]]['Anime']} (English: {listofanimes[outcome[i]]['English']}) (Type: {listofanimes[outcome[i]]['Type']})")
+            print(f"{i + 1}. {chosenlist3[outcome[i]]['Anime']} (English: {chosenlist3[outcome[i]]['English']}) (Type: {chosenlist3[outcome[i]]['Type']})")
         d = input('Which anime do you wish to know more about? (number/stop): ')
         try:
             d = int(d)
@@ -242,7 +252,7 @@ def getlastdata(index, myanimelistpage):
     listofanimes[index]["Members"] = infotext(myanimelistpage, "Members:")
 
 def search():
-    b = whichanime(input("Which anime are you looking for?: "))
+    b = whichanime(input("Which anime are you looking for?: "), listofanimes)
     if b == None:
         pass
     else:
@@ -271,7 +281,7 @@ def search():
                     value2 = value
                 spaces = (19 - len(key)) * " "
                 print(key + ':' + spaces + value2)
-        print(f"Where to watch:     {wheretowatch(checklistmaker(b), None)}")
+        print(f"Where to watch:     {wheretowatch(checklistmaker(b, listofanimes), None)}")
 
 def similarity(a, b):
     return SequenceMatcher(None, a, b).ratio() * 100
@@ -380,12 +390,13 @@ def add(wayf):
                 actualaddanime(newanime, c)
                 add(wayf)
     elif wayf == 'Anime':
-        a = whichanime(input("Which anime do you want to add?: "))
+        a = whichanime(input("Which anime do you want to add?: "), listofanimes)
         if a == None:
             pass
         else:
             actualaddanime(newanime, a)
             add(wayf)
+    sort2()
 
 def delete():
     global animelist
@@ -410,6 +421,7 @@ def delete():
         if b != '':
             print('This anime does not exist in this list.')
         delete()
+    sort2()
 
 def whichlist(b):
     if b.lower() == 'stop' or b.lower() == 'end' or b.lower() == 'cancel':
@@ -459,7 +471,6 @@ def sort2():
             empties.append(item)
     animelist = sorted(newanimelist, key = lambda i: i[sortmode], reverse=reverse) + empties
     newsave(directory + "JSON\\lists.json", animelist)
-    print('Sorting Complete!')
 
 def changelistname():
     print(lists)
@@ -526,6 +537,7 @@ def changesortingmethod():
     while chosensortmethod not in choiceslist:
         chosensortmethod = input("This sorting method does not exist. Try again: ")
     settings["sorting"] = chosensortmethod
+    sort2()
 
 def whichsetting():
     a = input("Which setting do you want to change?: ")
@@ -561,6 +573,33 @@ def setting():
     newsave(directory + "JSON\\settings.json", settings)
     start()
 
+def makeint(episodeswatched):
+    try:
+        episodeswatched = int(episodeswatched)
+    except:
+        while type(episodeswatched) == str:
+            try:
+                episodeswatched = input("Please input a number: ")
+                episodeswatched = int(episodeswatched)
+            except:
+                pass
+    return episodeswatched
+
+def changewatchedepisodes():
+    global animelist
+    chosenanimeindex = whichanime(input("Which anime are you looking for?: "), animelist)
+    anime = listofanimes[animelist[chosenanimeindex]["Index"]]
+    if anime["Episodes"] == "Unknown":
+        anime["Episodes"] == 999
+    
+    print(f"Episode count: {anime['Episodes']}")
+    episodeswatched = input("At what episode are you at?: ")
+    episodeswatched = makeint(episodeswatched)
+    while episodeswatched > int(anime["Episodes"]):
+        episodeswatched = makeint(input("This episode does not exist. Try again: "))
+    animelist[chosenanimeindex]["Watched Episodes"] = episodeswatched
+    newsave(directory + "JSON\\lists.json", animelist)
+
 def begin():
     a = input('What do you want to do?: ')
     if a.lower() == 'add anime' or a.lower() == 'add':
@@ -571,8 +610,6 @@ def begin():
             add('Anime')
     elif a.lower() == 'stop' or a.lower() == 'end':
         return print('Joe Joe!')
-    elif a.lower() == 'sort' or a.lower() == 'sort list':
-        sort2()
     elif a.lower() == 'print' or a.lower() == 'animelist' or a.lower() == 'print animelist':
         printanimelist()
     elif a.lower() == 'delete' or a.lower() == 'del':
@@ -591,6 +628,8 @@ def begin():
         setting()
     elif a.lower() == "change listname":
         changelistname()
+    elif a.lower() == "change episodes":
+        changewatchedepisodes()
     begin()
 
 start()

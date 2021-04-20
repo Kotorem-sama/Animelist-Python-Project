@@ -1,0 +1,4 @@
+English, Episodes, Aired, Rating (2X), actual duration, Members, 
+every number should be changed to int.
+Airdate should be converted to the standard notation.
+When sorted, sort it on alphabetical order by group.
