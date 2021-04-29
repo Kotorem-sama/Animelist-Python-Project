@@ -9,7 +9,7 @@ import time
 import random
 import urllib
 from http.cookiejar import CookieJar
-from os import listdir, remove, rename, mkdir
+from os import listdir, remove, rename, mkdir, walk
 from os.path import isfile, join, dirname, realpath
 
 directory = dirname(realpath(__file__)) + '\\'
@@ -80,11 +80,6 @@ header = {
     'referer': 'https://www.google.com/',
     'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/34.0.1847.131 Safari/537.36'
 }
-
-# # Saves the animelist to json.
-# def save(filename):
-#     with open(directory + "JSON\\Lists\\" + filename + ".json", "w") as f:
-#         json.dump(json.dumps(animelist), f)
 
 # Returns a list of anime names that now have the same length as the input.
 def lengthmaker(checklist, length):
@@ -222,7 +217,10 @@ def whichanime(a, chosenlist3):
         return None
     else:
         for i in range(0, len(outcome)):
-            print(f"{i + 1}. {chosenlist3[outcome[i]]['Anime']} (English: {chosenlist3[outcome[i]]['English']}) (Type: {chosenlist3[outcome[i]]['Type']})")
+            try:
+                print(f"{i + 1}. {chosenlist3[outcome[i]]['Anime']} (English: {chosenlist3[outcome[i]]['English']}) (Type: {chosenlist3[outcome[i]]['Type']})")
+            except:
+                print(f"{i + 1}. {chosenlist3[outcome[i]]['Anime']}")
         d = input('Which anime do you wish to know more about? (number/stop): ')
         try:
             d = int(d)
@@ -340,7 +338,7 @@ def deletelist():
                 load(b)
                 print("Loaded list '" + b + "'")
 
-def actualaddanime(newanime, c):
+def actualaddanime(newanime, c, list_name2):
     global animelist
     newanime["Index"] = c
     newanime["Anime"] = listofanimes[c]["Anime"]
@@ -354,12 +352,12 @@ def actualaddanime(newanime, c):
         except:
             pass
     if inlist:
-        if inlistname == list_name:
+        if inlistname == list_name2:
             print("Anime already in animelist")
         else:
-            changelist = input(f"This anime already exists in {inlistactualname}. Do you want to add it to {list_name}? (yes/no): ")
+            changelist = input(f"This anime {newanime['Anime']} already exists in {inlistactualname}. Do you want to add it to {list_name2}? (yes/no): ")
             if changelist.lower() == "yes":
-                changewhichlist(inlistname, list_name)
+                changewhichlist(inlistname, list_name2)
     else:
         b = input("Are you sure you want to add '" + listofanimes[c]["Anime"] + "'?: ")
         if b.lower() == 'yes' or b == '':
@@ -387,14 +385,14 @@ def add(wayf):
                 print('This Anime ID does not exist.')
                 add(wayf)
             else:
-                actualaddanime(newanime, c)
+                actualaddanime(newanime, c, list_name)
                 add(wayf)
     elif wayf == 'Anime':
         a = whichanime(input("Which anime do you want to add?: "), listofanimes)
         if a == None:
             pass
         else:
-            actualaddanime(newanime, a)
+            actualaddanime(newanime, a, list_name)
             add(wayf)
     sort2()
 
@@ -590,7 +588,7 @@ def changewatchedepisodes():
     chosenanimeindex = whichanime(input("Which anime are you looking for?: "), animelist)
     anime = listofanimes[animelist[chosenanimeindex]["Index"]]
     if anime["Episodes"] == "Unknown":
-        anime["Episodes"] == 999
+        anime["Episodes"] = 999
     
     print(f"Episode count: {anime['Episodes']}")
     episodeswatched = input("At what episode are you at?: ")
@@ -599,6 +597,83 @@ def changewatchedepisodes():
         episodeswatched = makeint(input("This episode does not exist. Try again: "))
     animelist[chosenanimeindex]["Watched Episodes"] = episodeswatched
     newsave(directory + "JSON\\lists.json", animelist)
+
+def totalwatchtime():
+    Actualduration = 0
+    for i in animelist:
+        try:
+            index = i["Index"]
+            animeinfo = listofanimes[index]
+            if not animeinfo["Episodes"] == "Unknown" and not animeinfo["Duration"] == "Unknown":
+                Actualduration += (int(animeinfo["ActualDuration"]) * int(i["Watched Episodes"]))
+            elif animeinfo["Duration"] != "Unknown" and animeinfo["Unknown"]:
+                Actualduration += (int(animeinfo["ActualDuration"]) * int(i["Watched Episodes"]))
+            Actualduration += int(animeinfo["Episodes"]) * int(animeinfo["ActualDuration"]) * int(animelist["Watched"])
+        except:
+            pass
+    return Actualduration
+
+def timebeenwatching(time, sec):
+    timer = time // sec
+    return timer, (time - (timer * sec))
+
+def printtimewatched(list1, list2 = ["Years", "Months", "Days", "Hours", "Minutes", "Seconds"]):
+    list3 = []
+    for i in range(0, len(list1)):
+        if list1[i] > 0:
+            list3.append((list1[i], list2[i]))
+    sentence = ""
+    for i in range(0, len(list3)):
+        sentence += f"{list3[i][0]} {list3[i][1]}, "
+    print("Time spent watching anime: " + sentence[0:-2])
+
+def viewstats():
+    global animelist
+    timewatched = totalwatchtime()
+    years, timewatched = timebeenwatching(timewatched, 31557600)
+    months, timewatched = timebeenwatching(timewatched, 2629800)
+    days, timewatched = timebeenwatching(timewatched, 86400)
+    hours, timewatched = timebeenwatching(timewatched, 3600)
+    minutes, timewatched = timebeenwatching(timewatched, 60)
+    printtimewatched([years, months, days, hours, minutes, timewatched])
+
+def whichfolder():
+    directory2 = input("What is the directory?: ") + "\\"
+    try:
+        yep = [x[0] for x in walk(directory2)]
+    except:
+        print("This path does not exist. Returning to Main Menu.")
+        return
+    yep.pop(0)
+    return yep, directory2
+
+def addbyfolder():
+    yep, directory2 = whichfolder()
+    yep2 = []
+    lenth = len(directory2)
+    chosenlist = whichlist(input("In which list do you want to save the anime?: "))
+    if chosenlist == None:
+        return
+
+    for i in yep:
+        j = i[lenth:-1] + i[-1]
+        yep2.append(j.replace("\\", " "))
+    
+    skipped = []
+    for j in yep2:
+        anime = whichanime(j, listofanimes)
+        if anime == None:
+            skipped.append(j)
+        else:
+            newanime = {"Index": anime, "Anime": listofanimes[anime]["Anime"], "List": chosenlist, "Watched": 0, "Watched Episodes": 0, "Rating": None}
+            actualaddanime(newanime, anime, chosenlist)
+    
+    try:
+        print("These anime were skipped:")
+        for l in skipped:
+            print(l)
+    except:
+        pass
 
 def begin():
     a = input('What do you want to do?: ')
@@ -630,6 +705,10 @@ def begin():
         changelistname()
     elif a.lower() == "change episodes":
         changewatchedepisodes()
+    elif a.lower() == "stats" or a.lower() == "show stats":
+        viewstats()
+    elif a.lower() == "add by folder":
+        addbyfolder()
     begin()
 
 start()
